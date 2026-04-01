@@ -11,4 +11,6 @@ public class Order
     private Integer id;
     @Column(name = "order_name")
     private String orderName;
+    @Column(name = "order_date")
+    private String orderDate;
 }
