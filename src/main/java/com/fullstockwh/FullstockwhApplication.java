@@ -1,4 +1,4 @@
-package com.fullstockwh.fullstockwh;
+package com.fullstockwh;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
@@ -9,8 +9,10 @@ public class FullstockwhApplication
 {
 	public static void main(String[] args)
 	{
+		//Dotenv configuration for ".env" file
 		Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 		dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+
 		SpringApplication.run(FullstockwhApplication.class, args);
 	}
 }
