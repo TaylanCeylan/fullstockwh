@@ -1,4 +1,4 @@
-package com.fullstockwh.fullstockwh;
+package com.fullstockwh;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
