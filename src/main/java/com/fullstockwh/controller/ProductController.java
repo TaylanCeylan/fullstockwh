@@ -27,8 +27,8 @@ public class ProductController
     }
 
     @PutMapping("/{id}/stock")
-    public ResponseEntity<Product> updateStock(@PathVariable Long id, @RequestParam Integer qty)
+    public ResponseEntity<Product> updateStock(@PathVariable Long id, @RequestParam Integer quantity)
     {
-        return ResponseEntity.ok(productService.updateStock(id, qty));
+        return ResponseEntity.ok(productService.updateStock(id, quantity));
     }
 }
