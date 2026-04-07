@@ -16,27 +16,30 @@ public class ProductService implements IProductService
 
     @Override
     @Transactional
-    public Product saveProduct(Product product) {
+    public Product saveProduct(Product product)
+    {
         return productRepository.save(product);
     }
 
     @Override
-    public List<Product> getAllProducts() {
+    public List<Product> getAllProducts()
+    {
         return productRepository.findAll();
     }
 
     @Override
-    public Product getProductById(Long id) {
+    public Product getProductById(Long id)
+    {
         return productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
     @Override
     @Transactional
-    public Product updateStock(Long id, Integer qty) {
+    public Product updateStock(Long id, Integer qty)
+    {
         Product product = getProductById(id);
         product.setStockQuantity(qty);
         return productRepository.save(product);
     }
-
 }

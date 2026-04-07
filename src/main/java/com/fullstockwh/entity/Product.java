@@ -4,14 +4,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "products")
+@Table(name = "product")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Product
 {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,5 +25,4 @@ public class Product
 
     @Column(nullable = false)
     private Integer stockQuantity;
-    
 }

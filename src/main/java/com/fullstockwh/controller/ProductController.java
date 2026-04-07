@@ -15,17 +15,20 @@ public class ProductController
     private final IProductService productService;
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAll() {
+    public ResponseEntity<List<Product>> getAll()
+    {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
     @PostMapping
-    public ResponseEntity<Product> create(@RequestBody Product product) {
+    public ResponseEntity<Product> create(@RequestBody Product product)
+    {
         return ResponseEntity.ok(productService.saveProduct(product));
     }
 
     @PutMapping("/{id}/stock")
-    public ResponseEntity<Product> updateStock(@PathVariable Long id, @RequestParam Integer qty) {
+    public ResponseEntity<Product> updateStock(@PathVariable Long id, @RequestParam Integer qty)
+    {
         return ResponseEntity.ok(productService.updateStock(id, qty));
     }
 }
