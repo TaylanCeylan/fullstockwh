@@ -14,7 +14,6 @@ public class MyUserDetailsService implements UserDetailsService
 {
     private final IUserRepository userRepository;
 
-
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException
     {
