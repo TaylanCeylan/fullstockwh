@@ -40,7 +40,9 @@ public class SecurityConfig
                         .requestMatchers("/api/user/**").hasAnyRole("ADMIN", "MANAGER", "USER")
                         .anyRequest().authenticated()
                 )
-                .formLogin(Customizer.withDefaults());
+                .formLogin(form -> form
+                        .defaultSuccessUrl("/", true)
+                        .permitAll());
 
         return http.build();
     }
