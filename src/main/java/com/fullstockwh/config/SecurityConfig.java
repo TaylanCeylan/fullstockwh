@@ -34,6 +34,7 @@ public class SecurityConfig
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
@@ -41,7 +42,9 @@ public class SecurityConfig
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .defaultSuccessUrl("/", true)
+                        .loginPage("/login")
+                        .loginProcessingUrl("/login")
+                        .defaultSuccessUrl("/",true)
                         .permitAll());
 
         return http.build();
