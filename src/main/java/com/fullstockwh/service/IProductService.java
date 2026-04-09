@@ -1,13 +1,18 @@
 package com.fullstockwh.service;
 
-import com.fullstockwh.entity.Product;
-import java.util.List;
+import com.fullstockwh.dto.request.ProductRequest;
+import com.fullstockwh.dto.response.ProductResponse;
+import com.fullstockwh.enums.Color;
+import com.fullstockwh.enums.Size;
 
+import java.util.List;
 
 public interface IProductService
 {
-    Product saveProduct(Product product);
-    List<Product> getAllProducts();
-    Product getProductById(Long id);
-    Product updateStock(Long id, Integer newQuantity); //for Warehouse manager
+    ProductResponse createProduct(ProductRequest request);
+    ProductResponse getProductById(Long id);
+    List<ProductResponse> getAllProducts();
+    List<ProductResponse> searchProducts(String name);
+    List<ProductResponse> filterProducts(Color color, Size size);
+    void deleteProduct(Long id);
 }

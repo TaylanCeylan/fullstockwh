@@ -1,4 +1,4 @@
-package com.fullstockwh.dto.response;
+package com.fullstockwh.dto.request;
 
 import com.fullstockwh.enums.Color;
 import com.fullstockwh.enums.Size;
@@ -7,15 +7,19 @@ import lombok.Data;
 
 @Data
 @Builder
-public class ProductResponse
+public class ProductRequest
 {
-    private Long id;
     private String name;
-    private String sku;
     private String brand;
+    private String description;
     private Double price;
     private Integer stockQuantity;
-    private String categoryName; // Category objesi yerine sadece ismini dönüyoruz
+    private Long categoryId;
     private Color color;
     private Size size;
+    // Lojistik detaylar
+    private Double weight;
+    private Double width;
+    private Double height;
+    private Double length;
 }
