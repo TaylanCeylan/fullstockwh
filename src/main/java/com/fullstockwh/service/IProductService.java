@@ -1,13 +1,18 @@
 package com.fullstockwh.service;
 
-import com.fullstockwh.entity.Product;
+import com.fullstockwh.dto.request.ProductCreateRequest;
+import com.fullstockwh.dto.response.ProductResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 
 public interface IProductService
 {
-    Product saveProduct(Product product);
-    List<Product> getAllProducts();
-    Product getProductById(Long id);
-    Product updateStock(Long id, Integer newQuantity); //for Warehouse manager
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    ProductResponse createProduct(ProductCreateRequest request);
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    ProductResponse updateStock(Long id, Integer quantity);
+
+    List<ProductResponse> getAllProducts();
 }
