@@ -3,7 +3,7 @@ package com.fullstockwh.service.impl;
 import com.fullstockwh.dto.request.CategoryCreateRequest;
 import com.fullstockwh.dto.response.CategoryResponse;
 import com.fullstockwh.entity.Category;
-import com.fullstockwh.repository.ICategoryRepository;
+import com.fullstockwh.repository.CategoryRepository;
 import com.fullstockwh.service.ICategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CategoryService implements ICategoryService
 {
-    private final ICategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
 
     @Override
     public CategoryResponse createCategory(CategoryCreateRequest request) {

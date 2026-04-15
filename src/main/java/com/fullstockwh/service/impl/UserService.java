@@ -1,7 +1,7 @@
 package com.fullstockwh.service.impl;
 
 import com.fullstockwh.entity.User;
-import com.fullstockwh.repository.IUserRepository;
+import com.fullstockwh.repository.UserRepository;
 import com.fullstockwh.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService implements IUserService
 {
-    private final IUserRepository userRepository;
+    private final UserRepository userRepository;
 
     @Override
     public User findById(Long id) {

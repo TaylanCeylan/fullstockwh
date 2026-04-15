@@ -1,12 +1,7 @@
 package com.fullstockwh.controller;
 
 import com.fullstockwh.dto.request.RegisterRequest;
-import com.fullstockwh.entity.User;
-import com.fullstockwh.entity.VerificationToken;
-import com.fullstockwh.enums.Role;
-import com.fullstockwh.repository.IUserRepository;
-import com.fullstockwh.repository.IVerificationTokenRepository;
-import com.fullstockwh.service.IEmailService;
+import com.fullstockwh.service.IAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,18 +10,11 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
-
 @Controller
 @RequiredArgsConstructor
 public class AuthController
 {
-    private final IUserRepository userRepository;
-    private final IVerificationTokenRepository tokenRepository;
-    private final IEmailService emailService;
-    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final IAuthService authService;
 
     @GetMapping("/login")
     public String showLoginForm() {
@@ -43,50 +31,32 @@ public class AuthController
     @PostMapping("/register")
     public String processRegistration(@ModelAttribute("user") RegisterRequest request, Model model)
     {
-        if (userRepository.findByEmail(request.getEmail()).isPresent())
+        try
         {
-            model.addAttribute("error", "This email already exists");
+            authService.registerUser(request);
+            return "redirect:/login?success";
+        }
+        catch (RuntimeException ex)
+        {
+            model.addAttribute("error", ex.getMessage());
             return "register";
         }
-
-        User savedUser = User.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.CUSTOMER)
-                .enabled(false)
-                .build();
-
-        userRepository.save(savedUser);
-
-        String token = UUID.randomUUID().toString();
-        VerificationToken verificationToken = new VerificationToken(token, savedUser);
-        tokenRepository.save(verificationToken);
-
-        emailService.SendVerificationEmail(savedUser.getEmail(), verificationToken.getToken());
-
-        return "redirect:/login?success";
     }
 
     @GetMapping("/api/auth/verify")
     public String verifyEmail(@RequestParam("token") String token)
     {
-        Optional<VerificationToken> optionalToken = tokenRepository.findByToken(token);
+        String result = authService.verifyUserToken(token);
 
-        if (optionalToken.isEmpty())
+        if (result.equals("invalid token"))
         {
             return "redirect:/login?error=invalid_token";
         }
 
-        VerificationToken verificationToken = optionalToken.get();
-
-        if (verificationToken.getExpirationDate().isBefore(LocalDateTime.now()))
+        if (result.equals("token_expired"))
         {
             return "redirect:/login?error=token_expired";
         }
-
-        User user = verificationToken.getUser();
-        user.setEnabled(true);
-        userRepository.save(user);
 
         return "redirect:/login?verified";
     }
