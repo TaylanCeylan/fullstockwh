@@ -4,8 +4,8 @@ import com.fullstockwh.dto.request.ProductCreateRequest;
 import com.fullstockwh.dto.response.ProductResponse;
 import com.fullstockwh.entity.Category;
 import com.fullstockwh.entity.Product;
-import com.fullstockwh.repository.ICategoryRepository;
-import com.fullstockwh.repository.IProductRepository;
+import com.fullstockwh.repository.CategoryRepository;
+import com.fullstockwh.repository.ProductRepository;
 import com.fullstockwh.service.IProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,8 +16,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductService implements IProductService
 {
-    private final IProductRepository productRepository;
-    private final ICategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
     @Override
     public ProductResponse createProduct(ProductCreateRequest request) {

@@ -1,7 +1,6 @@
 package com.fullstockwh.service.impl;
 
-import com.fullstockwh.entity.User;
-import com.fullstockwh.repository.IUserRepository;
+import com.fullstockwh.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -12,7 +11,7 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class MyUserDetailsService implements UserDetailsService
 {
-    private final IUserRepository userRepository;
+    private final UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException

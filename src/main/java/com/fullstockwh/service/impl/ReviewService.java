@@ -5,8 +5,8 @@ import com.fullstockwh.dto.response.ReviewResponse;
 import com.fullstockwh.entity.Product;
 import com.fullstockwh.entity.Review;
 import com.fullstockwh.entity.User;
-import com.fullstockwh.repository.IProductRepository;
-import com.fullstockwh.repository.IReviewRepository;
+import com.fullstockwh.repository.ProductRepository;
+import com.fullstockwh.repository.ReviewRepository;
 import com.fullstockwh.service.IReviewService;
 import com.fullstockwh.service.IUserService;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ReviewService implements IReviewService
 {
-    private final IReviewRepository reviewRepository;
-    private final IProductRepository productRepository;
+    private final ReviewRepository reviewRepository;
+    private final ProductRepository productRepository;
     private final IUserService userService;
 
     @Override
