@@ -12,10 +12,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class VerificationToken
 {
-    public VerificationToken(String token, User user)
+    public VerificationToken(String token, UserEntity userEntity)
     {
         this.token = token;
-        this.user = user;
+        this.userEntity = userEntity;
         this.expirationDate = LocalDateTime.now().plusHours(24);
     }
 
@@ -25,9 +25,9 @@ public class VerificationToken
 
     private String token;
 
-    @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
+    @OneToOne(targetEntity = UserEntity.class, fetch = FetchType.EAGER)
     @JoinColumn(nullable = false, name = "user_id")
-    private User user;
+    private UserEntity userEntity;
 
     private LocalDateTime expirationDate;
 }

@@ -1,7 +1,7 @@
 package com.fullstockwh.service.impl;
 
 import com.fullstockwh.dto.request.RegisterRequest;
-import com.fullstockwh.entity.User;
+import com.fullstockwh.entity.UserEntity;
 import com.fullstockwh.entity.VerificationToken;
 import com.fullstockwh.enums.Role;
 import com.fullstockwh.repository.UserRepository;
@@ -34,19 +34,19 @@ public class AuthServiceImpl implements IAuthService
             throw new RuntimeException("Email already exists");
         }
 
-        User user = User.builder()
+        UserEntity userEntity = UserEntity.builder()
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .role(Role.CUSTOMER)
                 .enabled(false)
                 .build();
-        userRepository.save(user);
+        userRepository.save(userEntity);
 
         String token = UUID.randomUUID().toString();
-        VerificationToken verificationToken = new VerificationToken(token, user);
+        VerificationToken verificationToken = new VerificationToken(token, userEntity);
         verificationTokenRepository.save(verificationToken);
 
-        emailService.SendVerificationEmail(user.getEmail(), token);
+        emailService.SendVerificationEmail(userEntity.getEmail(), token);
     }
 
     @Transactional
@@ -69,9 +69,9 @@ public class AuthServiceImpl implements IAuthService
             return "token expired";
         }
 
-        User user = verificationToken.getUser();
-        user.setEnabled(true);
-        userRepository.save(user);
+        UserEntity userEntity = verificationToken.getUserEntity();
+        userEntity.setEnabled(true);
+        userRepository.save(userEntity);
 
         verificationTokenRepository.delete(verificationToken);
 

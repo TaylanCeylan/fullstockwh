@@ -33,7 +33,7 @@ public class Review
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // User who made the comment
+    private UserEntity userEntity; // User who made the comment
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
