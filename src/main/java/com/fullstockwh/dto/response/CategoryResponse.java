@@ -9,12 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductResponse
+public class CategoryResponse
 {
     private Long id;
     private String name;
-    private String sku;
-    private Double price;
-    private Integer stockQuantity;
-    private String categoryName;
 }
