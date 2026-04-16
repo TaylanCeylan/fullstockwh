@@ -4,7 +4,7 @@ import com.fullstockwh.dto.request.ReviewCreateRequest;
 import com.fullstockwh.dto.response.ReviewResponse;
 import com.fullstockwh.entity.Product;
 import com.fullstockwh.entity.Review;
-import com.fullstockwh.entity.User;
+import com.fullstockwh.entity.UserEntity;
 import com.fullstockwh.repository.ProductRepository;
 import com.fullstockwh.repository.ReviewRepository;
 import com.fullstockwh.service.IReviewService;
@@ -30,14 +30,14 @@ public class ReviewService implements IReviewService
                 .orElseThrow(() -> new RuntimeException("Product cannot be found to be Reviewed!"));
 
         // 2. Find user in Service
-        User user = userService.findById(request.getUserId());
+        UserEntity userEntity = userService.findById(request.getUserId());
 
         // 3. Make Review Object
         Review review = Review.builder()
                 .comment(request.getComment())
                 .rating(request.getRating())
                 .product(product)
-                .user(user)
+                .userEntity(userEntity)
                 .build();
 
         reviewRepository.save(review);
@@ -57,7 +57,7 @@ public class ReviewService implements IReviewService
                 .comment(review.getComment())
                 .rating(review.getRating())
                 .productName(review.getProduct().getName())
-                .userName(review.getUser().getUsername()) // or user.getEmail()
+                .userName(review.getUserEntity().getUsername()) // or user.getEmail()
                 .build();
     }
 }
