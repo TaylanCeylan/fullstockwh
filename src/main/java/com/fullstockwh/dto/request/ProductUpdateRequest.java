@@ -1,21 +1,21 @@
 package com.fullstockwh.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.util.List;
 
 @Data
-public class ProductCreateRequest
+public class ProductUpdateRequest
 {
+    @NotBlank(message = "Product name is required for update!")
     private String name;
 
     private String description;
-
     private String imageUrl;
 
     @NotNull(message = "CategoryID cannot be null!")
     private Long categoryId;
 
-    //list of product variant
-    private List<VariantCreateRequest> variants;
+    private List<VariantUpdateRequest> variants;
 }

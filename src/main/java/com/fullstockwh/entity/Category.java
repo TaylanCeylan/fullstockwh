@@ -1,30 +1,49 @@
 package com.fullstockwh.entity;
 
+import com.fullstockwh.enums.TargetGender;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SoftDelete;
+import org.hibernate.type.SqlTypes;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "category")
-@Data
-@Builder
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Category
+@SoftDelete(columnName = "is_deleted")
+@Table(name = "category", schema = "fullstockwh", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"name", "targetGender"})
+})
+public class Category extends BaseEntity
 {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @NotBlank(message = "Category is required!")
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String name;
 
+    @Column(unique = true, length = 10)
+    private String code;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TargetGender targetGender;
+
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private List<String> requiredAttributes = new ArrayList<>();
+
+    @Builder.Default
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Product> products;
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Product> products = new ArrayList<>();
+
 }

@@ -3,6 +3,7 @@ package com.fullstockwh.controller;
 import com.fullstockwh.dto.request.CategoryCreateRequest;
 import com.fullstockwh.dto.response.CategoryResponse;
 import com.fullstockwh.service.ICategoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +17,7 @@ public class CategoryController
     private final ICategoryService categoryService;
 
     @PostMapping
-    public ResponseEntity<CategoryResponse> create(@RequestBody CategoryCreateRequest request) {
+    public ResponseEntity<CategoryResponse> create(@Valid @RequestBody CategoryCreateRequest request) {
         return ResponseEntity.ok(categoryService.createCategory(request));
     }
 
@@ -29,5 +30,10 @@ public class CategoryController
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getAll() {
         return ResponseEntity.ok(categoryService.getAllCategories());
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<CategoryResponse>> search(@RequestParam String keyword) {
+        return ResponseEntity.ok(categoryService.searchCategories(keyword));
     }
 }
