@@ -5,10 +5,7 @@ public enum Color
     RED,
     GREEN,
     BLUE,
-    YELLOW,
-    ORANGE,
-    BROWN,
-    PURPLE,
     WHITE,
+    GREY,
     BLACK
 }
