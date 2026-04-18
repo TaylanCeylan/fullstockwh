@@ -1,6 +1,7 @@
 package com.fullstockwh.service.impl;
 
 import com.fullstockwh.dto.request.CategoryCreateRequest;
+import com.fullstockwh.dto.request.CategoryUpdateRequest;
 import com.fullstockwh.dto.response.CategoryResponse;
 import com.fullstockwh.entity.Category;
 import com.fullstockwh.repository.CategoryRepository;
@@ -26,10 +27,26 @@ public class CategoryService implements ICategoryService
 
         Category category = Category.builder()
                 .name(request.getName())
+                .targetGender(request.getTargetGender())
                 .build();
 
-        categoryRepository.save(category);
-        return mapToResponse(category);
+        Category saved = categoryRepository.save(category);
+        return mapToResponse(saved);
+    }
+
+    @Override
+    public CategoryResponse updateCategoryName(Long id, CategoryUpdateRequest request) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Category not found!"));
+
+        if (categoryRepository.existsByNameIgnoreCaseAndTargetGender(request.getName(), category.getTargetGender())) {
+            throw new RuntimeException("This category already exists in this Gender!");
+        }
+
+        category.setName(request.getName());
+
+        Category saved = categoryRepository.save(category);
+        return mapToResponse(saved);
     }
 
     @Override
@@ -52,6 +69,7 @@ public class CategoryService implements ICategoryService
         return CategoryResponse.builder()
                 .id(category.getId())
                 .name(category.getName())
+                .targetGender(category.getTargetGender() != null ? category.getTargetGender().name() : null)
                 .build();
     }
 }
