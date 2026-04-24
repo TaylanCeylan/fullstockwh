@@ -2,24 +2,30 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<div th:fragment="userSidebar(activeItem)" class="list-group shadow-sm border-0">
-    <a th:href="@{/user/update}"
-       class="list-group-item list-group-item-action p-3 border-0"
-       th:classappend="${activeItem == 'settings' ? 'active' : ''}"
-       style="border-radius: 10px 10px 0 0;">
-        <i class="bi bi-person-gear me-2"></i> Account Settings
-    </a>
-    <a th:href="@{/user/favourites}"
-       class="list-group-item list-group-item-action p-3 border-0"
-       th:classappend="${activeItem == 'favourites' ? 'active' : ''}">
-        <i class="bi bi-heart me-2"></i> Favourites
-    </a>
-    <a th:href="@{/user/addresses}"
-       class="list-group-item list-group-item-action p-3 border-0"
-       th:classappend="${activeItem == 'addresses' ? 'active' : ''}"
-       style="border-radius: 0 0 10px 10px;">
-        <i class="bi bi-geo-alt me-2"></i> Addresses
-    </a>
+<div th:fragment="sidebar" class="card border-0 shadow-sm">
+    <div class="card-body p-3">
+        <h6 class="fw-bold mb-3">Categories</h6>
+        <ul class="nav flex-column gap-2">
+            <li class="nav-item">
+                <a class="nav-link p-0 text-dark" href="#">
+                    <i class="bi bi-chevron-right small me-2"></i>Shirts
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link p-0 text-dark" href="#">
+                    <i class="bi bi-chevron-right small me-2"></i>Jeans
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link p-0 text-dark" href="#">
+                    <i class="bi bi-chevron-right small me-2"></i>Accessories
+                </a>
+            </li>
+        </ul>
+
+        <hr class="my-4">
+        
+    </div>
 </div>
 
 </body>

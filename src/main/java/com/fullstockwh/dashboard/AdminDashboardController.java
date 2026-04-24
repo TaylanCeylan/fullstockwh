@@ -1,53 +1,51 @@
 package com.fullstockwh.dashboard;
 
+import com.fullstockwh.product.Product;
+import com.fullstockwh.product.ProductService;
+import com.fullstockwh.product.dto.ProductCreateRequest;
+import com.fullstockwh.product.dto.ProductResponse;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/admin")
 public class AdminDashboardController
 {
-    @GetMapping("/")
+    private final ProductService productService;
+
+    public AdminDashboardController(ProductService productService) {
+        this.productService = productService;
+    }
+
+    @GetMapping("/dashboard")
     public String AdminDashboard()
     {
         return "admin/dashboard";
     }
 
-    @GetMapping("/orders")
-    public String showOrdersPage()
+    @GetMapping("/products")
+    public String adminProducts(Model model)
     {
+        model.addAttribute("activePage", "products");
+        model.addAttribute("product", new ProductCreateRequest());
 
-    return "admin/orders";
+        List<ProductResponse> products = productService.getAllProducts();
+        model.addAttribute("productsList", products);
+
+        return "admin/products";
     }
-    @GetMapping("/analytics")
-    public String showAnalyticsPage()
+
+    @PostMapping("/products/add")
+    public String addProduct(@ModelAttribute("product")  ProductCreateRequest productCreateRequest)
     {
+        productService.createProduct(productCreateRequest);
 
-    return "admin/analytics";
-    }
-    @GetMapping("/settings")
-    public String showSettingsPage() {
-        return "admin/settings";
-    }
-    @GetMapping("/employees")
-    public String showEmployeesPage() {
-        return "admin/employees";
-    }
-    @GetMapping("/catalog")
-    public String showCatalogPage() {
-        return "admin/catalog";
-    }
-    @GetMapping("/supplyrequests")
-    public String showSupplyRequestsPage() {
-        return "admin/supplyrequests";
-    }
-    @GetMapping("/pricing")
-    public String showPricingPage() {
-        return "admin/pricing";
-    }
-    @GetMapping("/sustainability")
-    public String showSustainabilityPage() {
-        return "admin/sustainability";
+        return "redirect:/admin/products";
     }
 }

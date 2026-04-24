@@ -1,5 +1,6 @@
 package com.fullstockwh.product;
 
+import com.fullstockwh.category.enums.TargetGender;
 import com.fullstockwh.product.dto.ProductCreateRequest;
 import com.fullstockwh.product.dto.ProductUpdateRequest;
 import com.fullstockwh.product.dto.ProductResponse;
@@ -26,8 +27,13 @@ class ProductServiceImpl implements ProductService
     @Transactional
     public ProductResponse createProduct(ProductCreateRequest request) {
 
-        Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found! ID: " + request.getCategoryId()));
+        Category category = categoryRepository.findByName(request.getCategoryName())
+                .orElseGet(() -> {
+                    Category newCat = new Category();
+                    newCat.setName(request.getCategoryName());
+                    newCat.setTargetGender(TargetGender.UNISEX);
+                    return categoryRepository.save(newCat);
+                });
 
         Product product = Product.builder()
                 .name(request.getName())

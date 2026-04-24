@@ -17,14 +17,14 @@ public class AuthController
 
     @GetMapping("/login")
     public String showLoginForm() {
-        return "login";
+        return "auth/login";
     }
 
     @GetMapping("/register")
     public String showRegisterForm(Model model)
     {
         model.addAttribute("user", new RegisterRequest());
-        return "register";
+        return "auth/register";
     }
 
     @PostMapping("/register")
@@ -38,7 +38,7 @@ public class AuthController
         catch (RuntimeException ex)
         {
             model.addAttribute("error", ex.getMessage());
-            return "register";
+            return "auth/register";
         }
     }
 
