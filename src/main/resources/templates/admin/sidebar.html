@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="adminSidebar" class="d-flex flex-column flex-shrink-0 p-3 text-white sidebar">
+    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+        <span class="fs-4 fw-bold">Admin Dashboard</span>
+    </a>
+    <hr>
+
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a th:href="@{/admin/dashboard}" class="nav-link text-white"
+               th:classappend="${activePage == 'dashboard' ? 'active' : ''}">
+                Dashboard
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/products}" class="nav-link text-white"
+               th:classappend="${activePage == 'products' ? 'active' : ''}">
+                Products
+            </a>
+        </li>
+    </ul>
+
+    <hr>
+
+    <div class="dropdown">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn btn-danger w-100 text-start">
+                <strong>Logout</strong>
+            </button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

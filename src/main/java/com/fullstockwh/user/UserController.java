@@ -17,7 +17,7 @@ public class UserController
     {
         model.addAttribute("user", userService.getUserUpdateRequest());
 
-        return "user-profile";
+        return "user/profile";
     }
 
     @PostMapping("/user/update")
