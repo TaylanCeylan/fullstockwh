@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${product.name + ' - Fullstockwh'}">Product Detail</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    body { background-color: #f8f9fa; }
+    .img-placeholder {
+        background-color: #e9ecef;
+        height: 420px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #adb5bd;
+        border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="container mt-5">
+
+
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Home</a></li>
+      <li class="breadcrumb-item">
+        <a th:href="@{/category/{name}(name=${product.categoryName})}"
+           th:text="${product.categoryName}"
+           class="text-decoration-none">Category</a>
+      </li>
+      <li class="breadcrumb-item active" th:text="${product.name}">Product</li>
+    </ol>
+  </nav>
+
+  <div class="row g-5">
+
+
+    <div class="col-md-5">
+      <div class="img-placeholder shadow-sm">
+        <div class="text-center">
+          <i class="bi bi-image display-1"></i>
+          <p class="mt-2 small">No image available</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="col-md-7">
+
+
+      <span class="badge bg-light text-primary border mb-3 px-3 py-2"
+            th:text="${product.categoryName != null ? product.categoryName : 'General'}">
+                Category
+            </span>
+
+
+      <h1 class="fw-bold mb-3" th:text="${product.name}">Product Name</h1>
+
+
+      <span class="badge bg-secondary mb-3" th:text="${product.gender}">Gender</span>
+
+
+      <p class="text-muted fs-6 mb-4"
+         th:text="${product.description != null ? product.description : 'No description provided.'}">
+        Description
+      </p>
+
+      <h3 class="fw-bold text-dark mb-3" th:text="${'$' + product.price}">$0.00</h3>
+      <hr>
+
+
+      <div th:if="${product.variants != null and !product.variants.isEmpty()}">
+        <h5 class="fw-bold mb-3">Available Variants</h5>
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle text-center">
+            <thead class="table-light">
+            <tr>
+              <th>SKU</th>
+              <th>Color</th>
+              <th>Size</th>
+              <th>Stock</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="v : ${product.variants}">
+              <td class="text-muted small" th:text="${v.sku}">SKU</td>
+              <td th:text="${v.color}">Color</td>
+              <td th:text="${v.size}">Size</td>
+              <td>
+                                <span class="badge"
+                                      th:classappend="${v.stockQuantity > 0} ? 'bg-success' : 'bg-danger'"
+                                      th:text="${v.stockQuantity > 0 ? v.stockQuantity + ' in stock' : 'Out of stock'}">
+                                </span>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div th:if="${product.variants == null or product.variants.isEmpty()}"
+           class="alert alert-secondary">
+        No variants have been added for this product yet.
+      </div>
+
+
+      <a th:href="@{/}" class="btn btn-outline-dark mt-3">
+        <i class="bi bi-arrow-left me-2"></i>Back to Products
+      </a>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

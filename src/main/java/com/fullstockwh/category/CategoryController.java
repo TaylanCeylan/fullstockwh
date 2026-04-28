@@ -40,4 +40,8 @@ public class CategoryController
     public ResponseEntity<List<CategoryResponse>> getAll() {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
+    @GetMapping("/by-gender/{gender}")
+    public ResponseEntity<List<CategoryResponse>> getByGender(@PathVariable String gender) {
+        return ResponseEntity.ok(categoryService.getCategoriesByGender(gender));
+    }
 }

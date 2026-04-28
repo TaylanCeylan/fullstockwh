@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Category Management - Admin Panel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    body { background-color: #f4f7f6; }
+    .sidebar { width: 280px; height: 100vh; position: fixed; left: 0; top: 0; background-color: #343a40; z-index: 1000; }
+    .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+    .container-fluid { max-width: 1300px; }
+    .card { border: none; border-radius: 12px; transition: all 0.3s; }
+    .card-header { border-radius: 12px 12px 0 0 !important; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{admin/sidebar :: adminSidebar}"></div>
+
+<div class="main-content">
+  <div class="container-fluid">
+
+
+    <div class="card shadow-sm mb-5" th:if="${editId == null}">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Quick Category Entry</h5>
+      </div>
+      <div class="card-body">
+        <form th:action="@{/admin/categories/add}"
+              th:object="${categoryRequest}"
+              method="post">
+          <div class="row g-3 align-items-end">
+
+            <div class="col-md-4">
+              <label class="form-label fw-bold small text-muted">CATEGORY NAME</label>
+              <input type="text" th:field="*{name}" class="form-control"
+                     placeholder="e.g. Sneakers" required>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label fw-bold small text-muted">TARGET GENDER</label>
+              <select th:field="*{targetGender}" class="form-select" required>
+                <option value="" disabled>Select gender</option>
+                <option th:each="g : ${genders}"
+                        th:value="${g}"
+                        th:text="${g}">
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm">
+                Save Category
+              </button>
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+
+
+    <div class="card shadow-sm mb-5" th:if="${editId != null}">
+      <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          Editing Category #<span th:text="${editId}"></span>
+          <span class="badge bg-dark ms-2" th:text="${editGender}"></span>
+        </h5>
+        <a th:href="@{/admin/categories}" class="btn btn-sm btn-outline-dark fw-bold">✕ Cancel</a>
+      </div>
+      <div class="card-body">
+        <form th:action="@{/admin/categories/update/{id}(id=${editId})}"
+              th:object="${updateRequest}"
+              method="post">
+          <div class="row g-3 align-items-end">
+
+            <div class="col-md-4">
+              <label class="form-label fw-bold small text-muted">CATEGORY NAME</label>
+              <input type="text" th:field="*{name}" class="form-control" required>
+            </div>
+
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-warning w-100 fw-bold shadow-sm">
+                Update Category
+              </button>
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Category Inventory</h5>
+        <span class="badge bg-primary px-3 py-2"
+              th:text="${categoriesList.size() + ' Categories Total'}">0 Categories</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-muted">
+            <tr>
+              <th class="ps-4" style="width: 80px;">ID</th>
+              <th>Name</th>
+              <th class="text-center">Gender</th>
+              <th class="text-center" style="width: 160px;">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="cat : ${categoriesList}"
+                th:classappend="${editId != null and editId == cat.id} ? 'table-warning' : ''">
+
+              <td class="ps-4 fw-bold text-secondary" th:text="${'#' + cat.id}">#1</td>
+              <td th:text="${cat.name}" class="fw-semibold">Category Name</td>
+              <td class="text-center">
+                                <span class="badge rounded-pill px-3"
+                                      th:text="${cat.targetGender}"
+                                      th:classappend="${cat.targetGender == 'MEN'} ? 'bg-primary' :
+                                                      (${cat.targetGender == 'WOMEN'} ? 'bg-danger' : 'bg-secondary')">
+                                </span>
+              </td>
+              <td class="text-center">
+                <div class="d-flex justify-content-center gap-1">
+                  <a th:href="@{/admin/categories/edit/{id}(id=${cat.id})}"
+                     class="btn btn-sm btn-outline-secondary border fw-semibold">
+                    Edit
+                  </a>
+                  <form th:action="@{/admin/categories/delete/{id}(id=${cat.id})}"
+                        method="post" style="display:inline;"
+                        onsubmit="return confirm('Delete this category and all its products?')">
+                    <button type="submit" class="btn btn-sm btn-danger fw-semibold">
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+
+            <tr th:if="${categoriesList.isEmpty()}">
+              <td colspan="4" class="text-center py-5 text-muted">
+                <div class="py-3">
+                  <i class="bi bi-tag display-4 d-block mb-3"></i>
+                  <p class="fs-5">No categories yet. Add your first one above!</p>
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

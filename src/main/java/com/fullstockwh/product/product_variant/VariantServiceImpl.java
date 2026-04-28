@@ -10,6 +10,9 @@ import com.fullstockwh.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +26,31 @@ class VariantServiceImpl implements VariantService
     public void addVariantToProduct(VariantCreateRequest request) {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found. Variant cannot be added!"));
+        Optional<ProductVariant> existing = variantRepository
+                .findByProductIdAndColorAndSize(request.getProductId(), request.getColor(), request.getSize());
+
+        if (existing.isPresent()) {
+
+            ProductVariant variant = existing.get();
+
+            boolean existingHasWeight = variant.getUnitWeight() != null;
+            boolean newHasWeight      = request.getUnitWeight() != null;
+
+            if (existingHasWeight && newHasWeight
+                    && !variant.getUnitWeight().equals(request.getUnitWeight())) {
+                throw new RuntimeException(
+                        "The unit weight for this variant is different from the previous entry. " +
+                                "Please enter the correct unit weight."
+                );
+            }
+            variant.setStockQuantity(variant.getStockQuantity() + request.getStockQuantity());
+
+            if (request.getUnitWeight() != null) {
+                variant.setUnitWeight(request.getUnitWeight());
+            }
+            variantRepository.save(variant);
+
+        } else {
 
         // Generating SKU
         String generatedSku = generateSmartSku(product.getName(), request.getColor(), request.getSize());
@@ -31,30 +59,22 @@ class VariantServiceImpl implements VariantService
                 .sku(generatedSku)
                 .color(request.getColor())
                 .size(request.getSize())
-                .price(request.getPrice())
                 .stockQuantity(request.getStockQuantity())
-                .weight(request.getWeight())
-                .width(request.getWidth())
-                .height(request.getHeight())
-                .length(request.getLength())
+                .unitWeight(request.getUnitWeight())
                 .product(product)
                 .build();
 
         variantRepository.save(variant);
+        }
     }
-
     @Override
     @Transactional
     public void updateVariant(VariantUpdateRequest request, Long id) {
         ProductVariant variant = variantRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Variant not found to be updated!"));
 
-        variant.setPrice(request.getPrice());
         variant.setStockQuantity(request.getStockQuantity());
-        variant.setWeight(request.getWeight());
-        variant.setWidth(request.getWidth());
-        variant.setHeight(request.getHeight());
-        variant.setLength(request.getLength());
+        variant.setUnitWeight(request.getUnitWeight());
 
         variantRepository.save(variant);
     }
@@ -88,14 +108,17 @@ class VariantServiceImpl implements VariantService
         return VariantResponse.builder()
                 .id(variant.getId())
                 .sku(variant.getSku())
-                .color(variant.getColor().name())
-                .size(variant.getSize().name())
-                .price(variant.getPrice())
+                .color(variant.getColor() != null ? variant.getColor().name() : null)
+                .size(variant.getSize() != null ? variant.getSize().name() : null)
                 .stockQuantity(variant.getStockQuantity())
-                .weight(variant.getWeight())
-                .width(variant.getWidth())
-                .height(variant.getHeight())
-                .length(variant.getLength())
+                .unitWeight(variant.getUnitWeight())
                 .build();
+    }
+    @Override
+    public List<VariantResponse> getVariantsByProductId(Long productId) {
+        return variantRepository.findByProductId(productId)
+                .stream()
+                .map(this::mapToVariantResponse)
+                .collect(Collectors.toList());
     }
 }

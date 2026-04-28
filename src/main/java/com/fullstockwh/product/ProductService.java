@@ -19,5 +19,9 @@ public interface ProductService
 
     List<ProductResponse> getAllProducts();
 
+    List<ProductResponse> searchAndSortProducts(String search, String sortBy, String direction);
+
     ProductResponse getProductById(Long id);
+
+    List<ProductResponse> getProductsByCategoryName(String categoryName);
 }

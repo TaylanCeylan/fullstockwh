@@ -15,10 +15,7 @@ public class VariantResponse
     private String sku;
     private String color;
     private String size;
-    private Double price;
     private Integer stockQuantity;
-    private Double weight;
-    private Double width;
-    private Double height;
-    private Double length;
+    private Double unitWeight;
+
 }

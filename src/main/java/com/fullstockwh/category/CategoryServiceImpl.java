@@ -3,6 +3,8 @@ package com.fullstockwh.category;
 import com.fullstockwh.category.dto.CategoryCreateRequest;
 import com.fullstockwh.category.dto.CategoryUpdateRequest;
 import com.fullstockwh.category.dto.CategoryResponse;
+import com.fullstockwh.category.enums.TargetGender;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -58,6 +60,18 @@ class CategoryServiceImpl implements CategoryService
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAll().stream()
                 .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+    @Override
+    public List<CategoryResponse> getCategoriesByGender(String gender) {
+        TargetGender targetGender = TargetGender.valueOf(gender.toUpperCase());
+        return categoryRepository.findByTargetGender(targetGender)
+                .stream()
+                .map(c -> CategoryResponse.builder()
+                        .id(c.getId())
+                        .name(c.getName())
+                        .targetGender(c.getTargetGender().name())
+                        .build())
                 .collect(Collectors.toList());
     }
 

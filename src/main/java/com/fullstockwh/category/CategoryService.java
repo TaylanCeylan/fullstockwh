@@ -18,4 +18,6 @@ public interface CategoryService
     void deleteCategory(Long id);
 
     List<CategoryResponse> getAllCategories();
+
+    List<CategoryResponse> getCategoriesByGender(String gender);
 }
