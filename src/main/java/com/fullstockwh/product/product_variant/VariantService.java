@@ -4,6 +4,7 @@ import com.fullstockwh.product.product_variant.dto.VariantCreateRequest;
 import com.fullstockwh.product.product_variant.dto.VariantUpdateRequest;
 import com.fullstockwh.product.product_variant.dto.VariantResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
+import java.util.List;
 
 public interface VariantService
 {
@@ -18,4 +19,5 @@ public interface VariantService
 
     VariantResponse mapToVariantResponse(ProductVariant variant);
 
+    List<VariantResponse> getVariantsByProductId(Long productId);
 }

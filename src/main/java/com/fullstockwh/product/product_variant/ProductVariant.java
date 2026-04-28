@@ -12,7 +12,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "product_variant")
+@Table(name = "product_variant",
+        uniqueConstraints = {
+            @UniqueConstraint(columnNames = {"product_id", "color", "size"})
+       })
 @Data
 @Builder
 @NoArgsConstructor
@@ -32,17 +35,13 @@ public class ProductVariant
     @Enumerated(EnumType.STRING)
     private Size size;
 
-    @Min(0)
-    private Double price;
 
     @Min(0)
     private Integer stockQuantity;
 
     //logistics
-    private Double weight; // kg
-    private Double width;  // cm
-    private Double height; // cm
-    private Double length; // cm
+    private Double unitWeight; // unit kg
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")

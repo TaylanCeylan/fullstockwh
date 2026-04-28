@@ -4,11 +4,13 @@ import com.fullstockwh.category.Category;
 import com.fullstockwh.product.product_variant.ProductVariant;
 import com.fullstockwh.product.review.Review;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +28,10 @@ public class Product
 
     @NotBlank(message = "Product name is required!")
     private String name;
+
+    @Min(0)
+    @Column(nullable = false)
+    private BigDecimal price;
 
     @Column(length = 1000)
     private String description;

@@ -18,15 +18,11 @@ public class VariantCreateRequest
     @NotNull
     private Size size;
 
-    @Min(0)
-    private Double price;
 
     @Min(0)
     private Integer stockQuantity;
 
     //logistics
-    private Double weight;
-    private Double width;
-    private Double height;
-    private Double length;
+    private Double unitWeight;
+
 }

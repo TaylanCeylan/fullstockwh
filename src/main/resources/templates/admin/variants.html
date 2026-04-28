@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Variants - ' + ${product.name}">Variants</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"/>
+    <style>
+        body { background-color: #f4f7f6; }
+        .sidebar { width: 280px; height: 100vh; position: fixed; left: 0; top: 0;
+                   background-color: #343a40; z-index: 1000; }
+        .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{admin/sidebar :: adminSidebar}"></div>
+
+<div class="main-content">
+    <div class="container-fluid" style="max-width: 1100px;">
+
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <a href="/admin/products" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <div>
+                <h4 class="mb-0 fw-bold" th:text="'Variants: ' + ${product.name}">Variants</h4>
+                <span class="text-muted small"
+                      th:text="'Price: ₺' + ${product.price} + '  ·  Category: ' + ${product.categoryName}">
+                </span>
+            </div>
+        </div>
+
+        <div th:if="${errorMessage != null}"
+             class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div class="card shadow-sm mb-4 border-warning" th:if="${variant != null}">
+            <div class="card-header bg-warning text-dark fw-semibold d-flex justify-content-between">
+        <span>
+            Editing Variant #<span th:text="${variant.id}"></span>
+            — <span th:text="${variant.color}"></span> / <span th:text="${variant.size}"></span>
+        </span>
+                <a th:href="@{/admin/products/{id}/variants(id=${product.id})}"
+                   class="btn btn-sm btn-outline-dark">✕ Cancel</a>
+            </div>
+
+            <div class="card-body">
+                <form th:action="@{/admin/variants/update/{id}(id=${variant.id})}"
+                      th:object="${updateRequest}"
+                      method="post">
+                    <input type="hidden" name="productId" th:value="${product.id}"/>
+
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">COLOR (read-only)</label>
+                            <input type="text" class="form-control bg-light"
+                                   th:value="${variant.color}" readonly/>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">SIZE (read-only)</label>
+                            <input type="text" class="form-control bg-light"
+                                   th:value="${variant.size}" readonly/>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">STOCK</label>
+                            <input type="number" min="0"
+                                   th:field="*{stockQuantity}"
+                                   class="form-control" required/>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">UNIT WEIGHT (kg)</label>
+                            <input type="number" step="0.01" min="0"
+                                   th:field="*{unitWeight}"
+                                   class="form-control" placeholder="0.00"/>
+                        </div>
+
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-warning w-100 fw-bold">
+                                Update
+                            </button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white fw-semibold">
+                Add New Variant
+            </div>
+            <div class="card-body">
+                <form th:action="@{/admin/products/{id}/variants/add(id=${product.id})}"
+                      th:object="${variantRequest}"
+                      method="post">
+
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">COLOR</label>
+                            <select th:field="*{color}" class="form-select" required>
+                                <option value="" disabled selected>Select color</option>
+                                <option th:each="c : ${colors}"
+                                        th:value="${c}"
+                                        th:text="${c}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">SIZE</label>
+                            <select th:field="*{size}" class="form-select" required>
+                                <option value="" disabled selected>Select size</option>
+                                <option th:each="s : ${sizes}"
+                                        th:value="${s}"
+                                        th:text="${s}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">STOCK</label>
+                            <input type="number" min="0" th:field="*{stockQuantity}"
+                                   class="form-control" placeholder="0" required/>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">UNIT WEIGHT (kg)</label>
+                            <input type="number" step="0.01" min="0" th:field="*{unitWeight}"
+                                   class="form-control" placeholder="0.00"/>
+                        </div>
+
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-success w-100 fw-bold">
+                                <i class="bi bi-plus-lg"></i> Add
+                            </button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Current Variants</span>
+                <span class="badge bg-primary px-3"
+                      th:text="${variants.size()} + ' variants'">0 variants</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted">
+                    <tr>
+                        <th class="ps-4">ID</th>
+                        <th>SKU</th>
+                        <th>Color</th>
+                        <th>Size</th>
+                        <th>Stock</th>
+                        <th>Unit Weight</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="v : ${variants}">
+                        <td class="ps-4 text-muted fw-bold" th:text="${'#' + v.id}"></td>
+                        <td class="text-muted small" th:text="${v.sku}"></td>
+                        <td th:text="${v.color}"></td>
+                        <td th:text="${v.size}"></td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${v.stockQuantity > 0} ? 'bg-success' : 'bg-danger'"
+                                  th:text="${v.stockQuantity > 0 ? v.stockQuantity + ' in stock' : 'Out of stock'}">
+                            </span>
+                        </td>
+                        <td th:text="${v.unitWeight != null ? v.unitWeight : '—'}"></td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-1">
+
+                                <a th:href="@{/admin/variants/edit/{id}(id=${v.id})}"
+                                   class="btn btn-sm btn-outline-warning fw-semibold">Edit</a>
+
+                                <form th:action="@{/admin/variants/delete/{variantId}(variantId=${v.id})}"
+                                      method="post"
+                                      onsubmit="return confirm('Delete this variant?')">
+                                    <input type="hidden" name="productId" th:value="${product.id}"/>
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+
+                            </div>
+                        </td>
+
+                    <tr th:if="${variants.isEmpty()}">
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            No variants yet. Add the first one above.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

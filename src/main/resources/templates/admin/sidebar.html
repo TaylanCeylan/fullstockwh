@@ -16,6 +16,12 @@
             </a>
         </li>
         <li>
+            <a th:href="@{/admin/categories}" class="nav-link text-white"
+               th:classappend="${activePage == 'categories' ? 'active' : ''}">
+                Categories
+            </a>
+        </li>
+        <li>
             <a th:href="@{/admin/products}" class="nav-link text-white"
                th:classappend="${activePage == 'products' ? 'active' : ''}">
                 Products
