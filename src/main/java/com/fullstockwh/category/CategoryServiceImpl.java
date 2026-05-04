@@ -6,6 +6,7 @@ import com.fullstockwh.category.dto.CategoryResponse;
 import com.fullstockwh.category.enums.TargetGender;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -62,6 +63,7 @@ class CategoryServiceImpl implements CategoryService
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
+
     @Override
     public List<CategoryResponse> getCategoriesByGender(String gender) {
         TargetGender targetGender = TargetGender.valueOf(gender.toUpperCase());
@@ -71,7 +73,28 @@ class CategoryServiceImpl implements CategoryService
                         .id(c.getId())
                         .name(c.getName())
                         .targetGender(c.getTargetGender().name())
+                        .totalProducts(c.getProducts() != null ? c.getProducts().size() : 0)
                         .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<CategoryResponse> filterCategories(String keyword, String gender,
+                                                   String sortBy, String direction) {
+        String kw = (keyword == null || keyword.isBlank()) ? "" : keyword;
+
+        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction)
+                ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Sort sort = Sort.by(sortDirection, "name".equals(sortBy) ? "name" : "id");
+
+        TargetGender genderEnum = null;
+        if (gender != null && !gender.isBlank()) {
+            genderEnum = TargetGender.valueOf(gender.toUpperCase());
+        }
+
+        return categoryRepository.searchCategories(kw, genderEnum, sort)
+                .stream()
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
@@ -81,6 +104,7 @@ class CategoryServiceImpl implements CategoryService
                 .id(category.getId())
                 .name(category.getName())
                 .targetGender(category.getTargetGender() != null ? category.getTargetGender().name() : null)
+                .totalProducts(category.getProducts() != null ? category.getProducts().size() : 0)
                 .build();
     }
 }

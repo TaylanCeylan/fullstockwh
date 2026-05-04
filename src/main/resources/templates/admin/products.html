@@ -132,20 +132,41 @@
         <form th:action="@{/admin/products}" method="get" class="mb-3">
             <div class="row g-2 align-items-center">
 
-
-                <div class="col-md-5">
+                <div class="col-md-3">
                     <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
                         <input type="text"
                                name="search"
                                th:value="${search}"
                                class="form-control border-start-0"
-                               placeholder="Search by name or description...">
+                               placeholder="Search by name, category or description...">
                     </div>
                 </div>
 
+                <div class="col-md-2">
+                    <select id="filterGenderSelect" name="gender" class="form-select"
+                            onchange="loadFilterCategories(this.value)">
+                        <option value="" th:selected="${selectedGender == null or selectedGender == ''}">All Genders</option>
+                        <option th:each="g : ${genders}"
+                                th:value="${g}" th:text="${g}"
+                                th:selected="${selectedGender == g.name()}">
+                        </option>
+                    </select>
+                </div>
 
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <select id="filterCategorySelect" name="categoryId" class="form-select">
+                        <option value="">All Categories</option>
+                        <option th:each="cat : ${categoriesList}"
+                                th:value="${cat.id}" th:text="${cat.name}"
+                                th:selected="${categoryId != null and categoryId == cat.id}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
                     <select name="sortBy" class="form-select">
                         <option value="id"   th:selected="${sortBy == 'id'}">Sort by: ID</option>
                         <option value="name" th:selected="${sortBy == 'name'}">Sort by: Name</option>
@@ -160,12 +181,23 @@
                     </select>
                 </div>
 
+                <div class="col-md-2">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox"
+                               name="lowStockOnly" value="true"
+                               id="lowStockToggle" th:checked="${lowStockOnly}">
+                        <label class="form-check-label small fw-semibold text-danger"
+                               for="lowStockToggle">Low Stock Only</label>
+                    </div>
+                </div>
+
                 <div class="col-md-1">
                     <button type="submit" class="btn btn-dark w-100">Go</button>
                 </div>
                 <div class="col-md-1">
                     <a th:href="@{/admin/products}" class="btn btn-outline-secondary w-100">Reset</a>
                 </div>
+
             </div>
         </form>
 
@@ -201,6 +233,7 @@
                             <th>Category</th>
                             <th>Description</th>
                             <th>Price (₺)</th>
+                            <th>Total Stock</th>
                             <th class="text-center" style="width: 200px;">Actions</th>
                         </tr>
                         </thead>
@@ -219,6 +252,16 @@
                             </td>
                             <td class="text-muted small" th:text="${p.description}">—</td>
                             <td class="fw-bold" th:text="${'₺' + p.price}">₺0.00</td>
+
+                            <td>
+                                <span class="badge px-3"
+                                      th:classappend="${p.totalStock == 0 ? 'bg-danger' :
+                                                      (p.totalStock <= 10 ? 'bg-warning text-dark' : 'bg-success')}"
+                                      th:text="${p.totalStock == 0 ? 'Out of Stock' :
+                                               (p.totalStock <= 10 ? p.totalStock + ' - Low' : p.totalStock + ' - OK')}">
+                                </span>
+                            </td>
+
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
                                     <a th:href="@{/admin/products/{id}/variants(id=${p.id})}"
@@ -235,7 +278,7 @@
                         </tr>
 
                         <tr th:if="${productsList.isEmpty()}">
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="8" class="text-center py-5 text-muted">
                                 <div class="py-3">
                                     <i class="bi bi-box-seam display-4 d-block mb-3"></i>
                                     <p class="fs-5">Your inventory is empty. Add your first product above!</p>
@@ -271,6 +314,42 @@
                 categorySelect.disabled = false;
             });
     }
+
+    function loadFilterCategories(gender) {
+        const select = document.getElementById('filterCategorySelect');
+        select.innerHTML = '<option value="">All Categories</option>';
+        if (!gender) return;
+        fetch('/api/categories/by-gender/' + gender)
+            .then(res => res.json())
+            .then(cats => {
+                cats.forEach(cat => {
+                    const o = document.createElement('option');
+                    o.value = cat.id;
+                    o.textContent = cat.name;
+                    select.appendChild(o);
+                });
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const gender     = document.getElementById('filterGenderSelect').value;
+        const selectedId = /*[[${categoryId}]]*/ null;
+        if (gender) {
+            fetch('/api/categories/by-gender/' + gender)
+                .then(res => res.json())
+                .then(cats => {
+                    const select = document.getElementById('filterCategorySelect');
+                    select.innerHTML = '<option value="">All Categories</option>';
+                    cats.forEach(cat => {
+                        const o = document.createElement('option');
+                        o.value = cat.id;
+                        o.textContent = cat.name;
+                        if (selectedId && cat.id == selectedId) o.selected = true;
+                        select.appendChild(o);
+                    });
+                });
+        }
+    });
 </script>
 </body>
 </html>

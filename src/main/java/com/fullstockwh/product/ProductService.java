@@ -4,6 +4,8 @@ import com.fullstockwh.product.dto.ProductCreateRequest;
 import com.fullstockwh.product.dto.ProductUpdateRequest;
 import com.fullstockwh.product.dto.ProductResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface ProductService
@@ -24,4 +26,11 @@ public interface ProductService
     ProductResponse getProductById(Long id);
 
     List<ProductResponse> getProductsByCategoryName(String categoryName);
+
+    List<ProductResponse> filterProducts(String keyword, String gender,
+                                         Long categoryId, String sortBy,
+                                         String direction, boolean lowStockOnly);
+
+    List<ProductResponse> shopFilter(String keyword, String gender, Long categoryId,
+                                     BigDecimal minPrice, BigDecimal maxPrice, String sort);
 }

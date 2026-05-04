@@ -56,8 +56,11 @@ public class AdminDashboardController
     @GetMapping("/products")
     public String adminProducts(
             @RequestParam(required = false, defaultValue = "") String search,
+            @RequestParam(required = false, defaultValue = "") String gender,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false, defaultValue = "id") String sortBy,
             @RequestParam(required = false, defaultValue = "asc") String direction,
+            @RequestParam(required = false, defaultValue = "false") boolean lowStockOnly,
             Model model)
     {
         model.addAttribute("activePage", "products");
@@ -65,22 +68,35 @@ public class AdminDashboardController
         model.addAttribute("categoriesList", categoryService.getAllCategories());
         model.addAttribute("genders", TargetGender.values());
 
-        List<ProductResponse> products = productService.searchAndSortProducts(search, sortBy, direction);
+        List<ProductResponse> products = productService.filterProducts(search, gender, categoryId, sortBy, direction, lowStockOnly);
         model.addAttribute("productsList", products);
 
         model.addAttribute("search", search);
+        model.addAttribute("categoryId", categoryId);
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("direction", direction);
+        model.addAttribute("lowStockOnly", lowStockOnly);
         model.addAttribute("nextDirection", "asc".equals(direction) ? "desc" : "asc");
         return "admin/products";
     }
     @GetMapping("/categories")
-    public String adminCategories(Model model)
+    public String adminCategories(
+            @RequestParam(required = false, defaultValue = "") String search,
+            @RequestParam(required = false, defaultValue = "") String gender,
+            @RequestParam(required = false, defaultValue = "id") String sortBy,
+            @RequestParam(required = false, defaultValue = "asc") String direction,
+            Model model)
     {
         model.addAttribute("activePage", "categories");
         model.addAttribute("categoryRequest", new CategoryCreateRequest());
-        model.addAttribute("categoriesList", categoryService.getAllCategories());
+        model.addAttribute("categoriesList",
+                categoryService.filterCategories(search, gender, sortBy, direction));
         model.addAttribute("genders", TargetGender.values());
+        model.addAttribute("search", search);
+        model.addAttribute("selectedGender", gender);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("direction", direction);
+        model.addAttribute("nextDirection", "asc".equals(direction) ? "desc" : "asc");
         return "admin/categories";
     }
 
@@ -172,11 +188,23 @@ public class AdminDashboardController
         productService.deleteProduct(id);
         return "redirect:/admin/products";
     }
+
     @GetMapping("/products/{id}/variants")
-    public String manageVariants(@PathVariable Long id, Model model) {
+    public String manageVariants(@PathVariable Long id,
+                                 @RequestParam(required = false, defaultValue = "false") boolean lowStockOnly,
+                                 Model model) {
         ProductResponse product = productService.getProductById(id);
         model.addAttribute("product", product);
-        model.addAttribute("variants", variantService.getVariantsByProductId(id));
+
+        var variants = variantService.getVariantsByProductId(id);
+        if (lowStockOnly) {
+            variants = variants.stream()
+                    .filter(v -> v.getStockQuantity() <= 10)
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        model.addAttribute("variants", variants);
+        model.addAttribute("lowStockOnly", lowStockOnly);
         model.addAttribute("variantRequest", new VariantCreateRequest());
         model.addAttribute("colors", Color.values());
         model.addAttribute("sizes", Size.values());

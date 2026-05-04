@@ -22,4 +22,6 @@ public class ProductResponse
     private String categoryName;
     private String gender;
     private List<VariantResponse> variants;
+    private String totalStockStatus;
+    private int totalStock;
 }

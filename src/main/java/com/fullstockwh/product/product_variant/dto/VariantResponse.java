@@ -17,5 +17,6 @@ public class VariantResponse
     private String size;
     private Integer stockQuantity;
     private Double unitWeight;
+    private String stockStatus;
 
 }
