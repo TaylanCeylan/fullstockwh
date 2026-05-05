@@ -91,6 +91,55 @@
       </div>
     </div>
 
+    <form th:action="@{/admin/categories}" method="get" class="mb-3">
+      <div class="row g-2 align-items-center">
+
+        <div class="col-md-3">
+          <div class="input-group">
+            <span class="input-group-text bg-white">
+              <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" name="search" th:value="${search}"
+                   class="form-control border-start-0"
+                   placeholder="Search by category name...">
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <select name="gender" class="form-select">
+            <option value="" th:selected="${selectedGender == null or selectedGender == ''}">
+              All Genders
+            </option>
+            <option th:each="g : ${genders}"
+                    th:value="${g}" th:text="${g}"
+                    th:selected="${selectedGender == g.name()}">
+            </option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <select name="sortBy" class="form-select">
+            <option value="id"   th:selected="${sortBy == 'id'}">Sort by: ID</option>
+            <option value="name" th:selected="${sortBy == 'name'}">Sort by: Name</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <select name="direction" class="form-select">
+            <option value="asc"  th:selected="${direction == 'asc'}">↑ Ascending</option>
+            <option value="desc" th:selected="${direction == 'desc'}">↓ Descending</option>
+          </select>
+        </div>
+
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-dark w-100">Go</button>
+        </div>
+        <div class="col-md-1">
+          <a th:href="@{/admin/categories}" class="btn btn-outline-secondary w-100">Reset</a>
+        </div>
+
+      </div>
+    </form>
 
     <div class="card shadow-sm">
       <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
@@ -106,6 +155,7 @@
               <th class="ps-4" style="width: 80px;">ID</th>
               <th>Name</th>
               <th class="text-center">Gender</th>
+              <th class="text-center">Total Products</th>
               <th class="text-center" style="width: 160px;">Actions</th>
             </tr>
             </thead>
@@ -122,6 +172,15 @@
                                                       (${cat.targetGender == 'WOMEN'} ? 'bg-danger' : 'bg-secondary')">
                                 </span>
               </td>
+
+              <td class="text-center">
+                <span class="badge px-3"
+                      th:classappend="${cat.totalProducts == 0} ? 'bg-danger' :
+                                      (${cat.totalProducts <= 5} ? 'bg-warning text-dark' : 'bg-success')"
+                      th:text="${cat.totalProducts + ' products'}">
+                </span>
+              </td>
+
               <td class="text-center">
                 <div class="d-flex justify-content-center gap-1">
                   <a th:href="@{/admin/categories/edit/{id}(id=${cat.id})}"
@@ -140,7 +199,7 @@
             </tr>
 
             <tr th:if="${categoriesList.isEmpty()}">
-              <td colspan="4" class="text-center py-5 text-muted">
+              <td colspan="5" class="text-center py-5 text-muted">
                 <div class="py-3">
                   <i class="bi bi-tag display-4 d-block mb-3"></i>
                   <p class="fs-5">No categories yet. Add your first one above!</p>

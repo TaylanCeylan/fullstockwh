@@ -20,4 +20,7 @@ public interface CategoryService
     List<CategoryResponse> getAllCategories();
 
     List<CategoryResponse> getCategoriesByGender(String gender);
+
+    List<CategoryResponse> filterCategories(String keyword, String gender,
+                                            String sortBy, String direction);
 }

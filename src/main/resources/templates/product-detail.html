@@ -16,6 +16,61 @@
         color: #adb5bd;
         border-radius: 12px;
     }
+
+        .color-swatch {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 2px solid #dee2e6;
+            cursor: pointer;
+            outline: 3px solid transparent;
+            outline-offset: 3px;
+            transition: outline 0.15s ease, transform 0.15s ease;
+            display: inline-block;
+        }
+        .color-swatch:hover        { transform: scale(1.12); }
+        .color-swatch.active       { outline: 3px solid #212529; }
+
+        .swatch-RED    { background-color: #dc3545; }
+        .swatch-GREEN  { background-color: #198754; }
+        .swatch-BLUE   { background-color: #0d6efd; }
+        .swatch-WHITE  { background-color: #f8f9fa; border-color: #aaa; }
+        .swatch-GREY   { background-color: #6c757d; }
+        .swatch-BLACK  { background-color: #212529; }
+
+
+        .size-box {
+            width: 54px;
+            height: 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+            border: 1.5px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .size-box:hover         { border-color: #212529; background-color: #e9ecef; }
+        .size-box.active        { background-color: #212529; border-color: #212529; color: #fff; }
+        .size-box.unavailable   { opacity: 0.3; cursor: not-allowed;
+                                  text-decoration: line-through; }
+
+
+        .stock-badge {
+            display: inline-block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        .stock-badge.in-stock  { background-color: #d1f0db; color: #1a6b35; }
+        .stock-badge.low-stock { background-color: #fff3cd; color: #856404; }
+        .stock-badge.out-stock { background-color: #f8d7da; color: #842029; }
+
   </style>
 </head>
 <body>
@@ -53,16 +108,27 @@
     <div class="col-md-7">
 
 
-      <span class="badge bg-light text-primary border mb-3 px-3 py-2"
-            th:text="${product.categoryName != null ? product.categoryName : 'General'}">
-                Category
-            </span>
+      <div class="mb-2">
+                <span class="badge bg-light text-primary border px-3 py-2"
+                      th:text="${product.categoryName != null ? product.categoryName : 'General'}">
+                    Category
+                </span>
+        <span class="badge bg-secondary ms-1"
+              th:text="${product.gender}">Gender</span>
+      </div>
 
 
-      <h1 class="fw-bold mb-3" th:text="${product.name}">Product Name</h1>
+      <h1 class="fw-bold mb-2" th:text="${product.name}">Product Name</h1>
 
 
-      <span class="badge bg-secondary mb-3" th:text="${product.gender}">Gender</span>
+      <div class="mb-3">
+                <span th:if="${product.totalStockStatus == 'IN_STOCK'}"
+                      class="stock-badge in-stock">● In Stock</span>
+        <span th:if="${product.totalStockStatus == 'LOW_STOCK'}"
+              class="stock-badge low-stock">● Low Stock</span>
+        <span th:if="${product.totalStockStatus == 'OUT_OF_STOCK'}"
+              class="stock-badge out-stock">● Out of Stock</span>
+      </div>
 
 
       <p class="text-muted fs-6 mb-4"
@@ -70,43 +136,64 @@
         Description
       </p>
 
-      <h3 class="fw-bold text-dark mb-3" th:text="${'$' + product.price}">$0.00</h3>
+      <h3 class="fw-bold text-dark mb-3"
+          th:text="${'₺' + product.price}">$0.00</h3>
       <hr>
 
 
+
       <div th:if="${product.variants != null and !product.variants.isEmpty()}">
-        <h5 class="fw-bold mb-3">Available Variants</h5>
-        <div class="table-responsive">
-          <table class="table table-bordered align-middle text-center">
-            <thead class="table-light">
-            <tr>
-              <th>SKU</th>
-              <th>Color</th>
-              <th>Size</th>
-              <th>Stock</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="v : ${product.variants}">
-              <td class="text-muted small" th:text="${v.sku}">SKU</td>
-              <td th:text="${v.color}">Color</td>
-              <td th:text="${v.size}">Size</td>
-              <td>
-                                <span class="badge"
-                                      th:classappend="${v.stockQuantity > 0} ? 'bg-success' : 'bg-danger'"
-                                      th:text="${v.stockQuantity > 0 ? v.stockQuantity + ' in stock' : 'Out of stock'}">
-                                </span>
-              </td>
-            </tr>
-            </tbody>
-          </table>
+
+
+        <script th:inline="javascript">
+          const variants = /*[[${product.variants}]]*/ [];
+        </script>
+
+
+        <div class="mb-4" th:if="${not #lists.isEmpty(uniqueColors)}">
+          <p class="fw-semibold mb-2">
+            Color: <span id="selectedColorLabel" class="text-muted fw-normal">—</span>
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            <div th:each="color : ${uniqueColors}"
+                 class="color-swatch"
+                 th:classappend="'swatch-' + ${color}"
+                 th:attr="data-color=${color}, title=${color}"
+                 onclick="selectColor(this)">
+            </div>
+          </div>
         </div>
+
+
+        <div class="mb-4" th:if="${not #lists.isEmpty(uniqueSizes)}">
+          <p class="fw-semibold mb-2">
+            Size: <span id="selectedSizeLabel" class="text-muted fw-normal">—</span>
+          </p>
+          <div class="d-flex flex-wrap gap-2" id="sizeContainer">
+            <div th:each="size : ${uniqueSizes}"
+                 class="size-box"
+                 th:attr="data-size=${size}"
+                 th:text="${size}"
+                 onclick="selectSize(this)">
+            </div>
+          </div>
+        </div>
+
+
+        <div id="variantStatusRow" class="mb-4" style="display:none;">
+          <span id="variantStockBadge" class="stock-badge"></span>
+        </div>
+
       </div>
 
       <div th:if="${product.variants == null or product.variants.isEmpty()}"
            class="alert alert-secondary">
         No variants have been added for this product yet.
       </div>
+
+      <button class="btn btn-dark btn-lg w-100 mt-2" id="addToCartBtn" disabled>
+        Add to Cart
+      </button>
 
 
       <a th:href="@{/}" class="btn btn-outline-dark mt-3">
@@ -118,5 +205,69 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  let selectedColor = null;
+  let selectedSize  = null;
+
+  function selectColor(el) {
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+      selectedColor = el.dataset.color;
+      document.getElementById('selectedColorLabel').textContent = selectedColor;
+
+
+      selectedSize = null;
+      document.getElementById('selectedSizeLabel').textContent = '—';
+      document.getElementById('variantStatusRow').style.display = 'none';
+      document.getElementById('addToCartBtn').disabled = true;
+
+
+      document.querySelectorAll('.size-box').forEach(box => {
+          box.classList.remove('active', 'unavailable');
+          const match = variants.find(v => v.color === selectedColor && v.size === box.dataset.size);
+          if (!match || match.stockQuantity === 0) {
+              box.classList.add('unavailable');
+          }
+      });
+  }
+
+  function selectSize(el) {
+      if (el.classList.contains('unavailable')) return;
+      if (!selectedColor) {
+          alert('Please select a color first.');
+          return;
+      }
+
+      document.querySelectorAll('.size-box').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      selectedSize = el.dataset.size;
+      document.getElementById('selectedSizeLabel').textContent = selectedSize;
+
+      const variant = variants.find(v => v.color === selectedColor && v.size === selectedSize);
+      if (variant) {
+          showStockStatus(variant.stockStatus);
+          document.getElementById('addToCartBtn').disabled = variant.stockQuantity === 0;
+      }
+  }
+
+  function showStockStatus(status) {
+      const row   = document.getElementById('variantStatusRow');
+      const badge = document.getElementById('variantStockBadge');
+      badge.className = 'stock-badge';
+      if (status === 'IN_STOCK') {
+          badge.classList.add('in-stock');
+          badge.textContent = '● In Stock';
+      } else if (status === 'LOW_STOCK') {
+          badge.classList.add('low-stock');
+          badge.textContent = '● Low Stock — Hurry!';
+      } else {
+          badge.classList.add('out-stock');
+          badge.textContent = '● Out of Stock';
+      }
+      row.style.display = '';
+  }
+</script>
+
 </body>
 </html>

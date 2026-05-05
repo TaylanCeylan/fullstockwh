@@ -112,6 +112,7 @@ class VariantServiceImpl implements VariantService
                 .size(variant.getSize() != null ? variant.getSize().name() : null)
                 .stockQuantity(variant.getStockQuantity())
                 .unitWeight(variant.getUnitWeight())
+                .stockStatus(resolveStockStatus(variant.getStockQuantity()))
                 .build();
     }
     @Override
@@ -120,5 +121,11 @@ class VariantServiceImpl implements VariantService
                 .stream()
                 .map(this::mapToVariantResponse)
                 .collect(Collectors.toList());
+    }
+
+    private String resolveStockStatus(int quantity) {
+        if (quantity > 10)  return "IN_STOCK";
+        if (quantity > 0)   return "LOW_STOCK";
+        return "OUT_OF_STOCK";
     }
 }
