@@ -19,15 +19,19 @@ import com.fullstockwh.product.product_variant.enums.Size;
 import com.fullstockwh.product.ProductService;
 import com.fullstockwh.product.dto.ProductCreateRequest;
 import com.fullstockwh.product.dto.ProductResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/admin")
+@RequiredArgsConstructor
 public class AdminDashboardController
 {
     private final ProductService productService;
@@ -35,21 +39,30 @@ public class AdminDashboardController
     private final CategoryRepository categoryRepository;
     private final VariantService variantService;
     private final VariantRepository variantRepository;
-    public AdminDashboardController(ProductService productService,
-                                    CategoryService categoryService,
-                                    CategoryRepository categoryRepository,
-                                    VariantService variantService,
-                                    VariantRepository variantRepository) {
-        this.productService = productService;
-        this.categoryService = categoryService;
-        this.categoryRepository = categoryRepository;
-        this.variantService = variantService;
-        this.variantRepository = variantRepository;
-    }
 
     @GetMapping("/dashboard")
-    public String AdminDashboard()
-    {
+    public String AdminDashboard(Model model) {
+        List<CategoryResponse> categories = categoryService.getAllCategories();
+        List<ProductResponse> products = productService.getAllProducts();
+
+        int totalStock = products.stream()
+                .mapToInt(ProductResponse::getTotalStock)
+                .sum();
+
+        Map<String, Long> categoryStats = products.stream()
+                .collect(Collectors.groupingBy(
+                        ProductResponse::getCategoryName,
+                        Collectors.counting()
+                ));
+
+        categories.forEach(c -> categoryStats.putIfAbsent(c.getName(), 0L));
+
+        model.addAttribute("totalProducts", products.size());
+        model.addAttribute("totalStock", totalStock);
+        model.addAttribute("totalCategories", categories.size());
+        model.addAttribute("categoryStats", categoryStats);
+
+        model.addAttribute("activePage", "dashboard");
         return "admin/dashboard";
     }
 

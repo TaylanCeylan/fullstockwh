@@ -1,8 +1,27 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <style>
+        .sidebar-floating {
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        .sidebar-floating::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-floating::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+    </style>
+</head>
 <body>
 
-<div th:fragment="sidebar" class="card border-0 shadow-sm">
+<div th:fragment="sidebar" class="card border-0 shadow-sm sidebar-floating">
     <div class="card-body p-3">
 
         <a th:href="@{/}"

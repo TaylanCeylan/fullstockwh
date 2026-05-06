@@ -21,6 +21,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig
 {
     private final MyUserDetailsService userDetailsService;
+    private final CustomSuccessHandler customSuccessHandler;
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder()
@@ -46,8 +47,7 @@ public class SecurityConfig
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/",true)
+                        .successHandler(customSuccessHandler)
                         .permitAll());
 
         return http.build();
