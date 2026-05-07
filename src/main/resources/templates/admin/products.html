@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Product Management - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f7f6; }
+        .sidebar { width: 280px; height: 100vh; position: fixed; left: 0; top: 0; background-color: #343a40; z-index: 1000; }
+        .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+        .container-fluid { max-width: 1300px; }
+        .error-text { color: #dc3545; font-size: 0.8rem; margin-top: 4px; }
+        .card { border: none; border-radius: 12px; transition: all 0.3s; }
+        .card-header { border-radius: 12px 12px 0 0 !important; font-weight: 600; }
+        .table align-middle td { vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{admin/sidebar :: adminSidebar}"></div>
+
+<div class="main-content">
+    <div class="container-fluid">
+
+        <div class="card shadow-sm mb-5" th:if="${editId == null}">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Quick Product Entry</h5>
+            </div>
+            <div class="card-body">
+                <form th:action="@{/admin/products/add}" th:object="${product}" method="post">
+                    <div class="row g-3 align-items-start">
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">PRODUCT NAME</label>
+                            <input type="text" th:field="*{name}" class="form-control" placeholder="e.g. Sneaker" required>
+                            <div class="error-text" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">GENDER</label>
+                            <select id="addGenderSelect" class="form-select" required
+                                    onchange="loadCategories(this.value, 'addCategorySelect')">
+                                <option value="" disabled selected>Select gender</option>
+                                <option th:each="g : ${genders}" th:value="${g}" th:text="${g}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">CATEGORY</label>
+                            <select id="addCategorySelect" th:field="*{categoryId}"
+                                    class="form-select" required disabled>
+                                <option value="" disabled selected>Select gender first</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">DESCRIPTION</label>
+                            <input type="text" th:field="*{description}" class="form-control" placeholder="Brief specifications...">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">PRICE (₺)</label>
+                            <input type="number" step="0.01" min="0"
+                                   th:field="*{price}" class="form-control" placeholder="0.00" required>
+                        </div>
+
+                        <div class="col-md-2 mt-auto">
+                            <div style="height: 32px;" class="d-none d-md-block"></div>
+                            <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm">Save</button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-5" th:if="${editId != null}">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    Editing Product #<span th:text="${editId}"></span>
+                </h5>
+                <a th:href="@{/admin/products}" class="btn btn-sm btn-outline-dark fw-bold">✕ Cancel</a>
+            </div>
+            <div class="card-body">
+                <form th:action="@{/admin/products/update/{id}(id=${editId})}"
+                      th:object="${updateRequest}"
+                      method="post">
+                    <div class="row g-3 align-items-start">
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">PRODUCT NAME</label>
+                            <input type="text" th:field="*{name}" class="form-control" required>
+                        </div>
+
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">CATEGORY</label>
+                            <select th:field="*{categoryId}" class="form-select" required>
+                                <option value="" disabled>Select a category</option>
+                                <option th:each="cat : ${categoriesList}"
+                                        th:value="${cat.id}"
+                                        th:text="${cat.name}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold small text-muted">DESCRIPTION</label>
+                            <input type="text" th:field="*{description}" class="form-control">
+                        </div>
+
+                        <div class="col-md-1">
+                            <label class="form-label fw-bold small text-muted">PRICE (₺)</label>
+                            <input type="number" step="0.01" min="0"
+                                   th:field="*{price}" class="form-control" placeholder="0.00">
+                        </div>
+
+
+
+                        <div class="col-md-1 mt-auto">
+                            <div style="height: 32px;" class="d-none d-md-block"></div>
+                            <button type="submit" class="btn btn-warning w-100 fw-bold shadow-sm">Update</button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+
+        <form th:action="@{/admin/products}" method="get" class="mb-3">
+            <div class="row g-2 align-items-center">
+
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text"
+                               name="search"
+                               th:value="${search}"
+                               class="form-control border-start-0"
+                               placeholder="Search by name, category or description...">
+                    </div>
+                </div>
+
+                <div class="col-md-2">
+                    <select id="filterGenderSelect" name="gender" class="form-select"
+                            onchange="loadFilterCategories(this.value)">
+                        <option value="" th:selected="${selectedGender == null or selectedGender == ''}">All Genders</option>
+                        <option th:each="g : ${genders}"
+                                th:value="${g}" th:text="${g}"
+                                th:selected="${selectedGender == g.name()}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <select id="filterCategorySelect" name="categoryId" class="form-select">
+                        <option value="">All Categories</option>
+                        <option th:each="cat : ${categoriesList}"
+                                th:value="${cat.id}" th:text="${cat.name}"
+                                th:selected="${categoryId != null and categoryId == cat.id}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <select name="sortBy" class="form-select">
+                        <option value="id"   th:selected="${sortBy == 'id'}">Sort by: ID</option>
+                        <option value="name" th:selected="${sortBy == 'name'}">Sort by: Name</option>
+                    </select>
+                </div>
+
+
+                <div class="col-md-2">
+                    <select name="direction" class="form-select">
+                        <option value="asc"  th:selected="${direction == 'asc'}">↑ Ascending</option>
+                        <option value="desc" th:selected="${direction == 'desc'}">↓ Descending</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox"
+                               name="lowStockOnly" value="true"
+                               id="lowStockToggle" th:checked="${lowStockOnly}">
+                        <label class="form-check-label small fw-semibold text-danger"
+                               for="lowStockToggle">Low Stock Only</label>
+                    </div>
+                </div>
+
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-dark w-100">Go</button>
+                </div>
+                <div class="col-md-1">
+                    <a th:href="@{/admin/products}" class="btn btn-outline-secondary w-100">Reset</a>
+                </div>
+
+            </div>
+        </form>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Product Inventory</h5>
+                <span class="badge bg-primary px-3 py-2" th:text="${productsList.size() + ' Items Total'}">0 Items</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted">
+                        <tr>
+                            <th style="width: 80px;" class="ps-4">
+                                <a th:href="@{/admin/products(search=${search},sortBy='id',direction=${sortBy == 'id' ? nextDirection : 'asc'})}"
+                                   class="text-decoration-none text-muted">
+                                    ID
+                                    <i th:if="${sortBy == 'id'}"
+                                       th:classappend="${direction == 'asc'} ? 'bi-sort-up' : 'bi-sort-down'"
+                                       class="bi ms-1"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a th:href="@{/admin/products(search=${search},sortBy='name',direction=${sortBy == 'name' ? nextDirection : 'asc'})}"
+                                   class="text-decoration-none text-muted">
+                                    Name
+                                    <i th:if="${sortBy == 'name'}"
+                                       th:classappend="${direction == 'asc'} ? 'bi-sort-alpha-up' : 'bi-sort-alpha-down'"
+                                       class="bi ms-1"></i>
+                                </a>
+                            </th>
+                            <th>Gender</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Price (₺)</th>
+                            <th>Total Stock</th>
+                            <th class="text-center" style="width: 200px;">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="p : ${productsList}"
+                            th:classappend="${editId != null and editId == p.id} ? 'table-warning' : ''">
+                            <td class="ps-4 fw-bold text-secondary" th:text="${'#' + p.id}"></td>
+                            <td class="fw-semibold" th:text="${p.name}">Product Name</td>
+                            <td>
+        <span class="badge rounded-pill bg-secondary px-3"
+              th:text="${p.gender}">UNISEX</span>
+                            </td>
+                            <td>
+        <span class="badge rounded-pill bg-info text-dark px-3"
+              th:text="${p.categoryName != null ? p.categoryName : 'Uncategorized'}">Category</span>
+                            </td>
+                            <td class="text-muted small" th:text="${p.description}">—</td>
+                            <td class="fw-bold" th:text="${'₺' + p.price}">₺0.00</td>
+
+                            <td>
+                                <span class="badge px-3"
+                                      th:classappend="${p.totalStock == 0 ? 'bg-danger' :
+                                                      (p.totalStock <= 10 ? 'bg-warning text-dark' : 'bg-success')}"
+                                      th:text="${p.totalStock == 0 ? 'Out of Stock' :
+                                               (p.totalStock <= 10 ? p.totalStock + ' - Low' : p.totalStock + ' - OK')}">
+                                </span>
+                            </td>
+
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-1">
+                                    <a th:href="@{/admin/products/{id}/variants(id=${p.id})}"
+                                       class="btn btn-sm btn-outline-primary fw-semibold">Variants</a>
+                                    <a th:href="@{/admin/products/edit/{id}(id=${p.id})}"
+                                       class="btn btn-sm btn-outline-secondary border fw-semibold">Edit</a>
+                                    <form th:action="@{/admin/products/delete/{id}(id=${p.id})}"
+                                          method="post" style="display:inline;"
+                                          onsubmit="return confirm('Delete this product and all its variants?')">
+                                        <button type="submit" class="btn btn-sm btn-danger fw-semibold">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${productsList.isEmpty()}">
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <div class="py-3">
+                                    <i class="bi bi-box-seam display-4 d-block mb-3"></i>
+                                    <p class="fs-5">Your inventory is empty. Add your first product above!</p>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function loadCategories(gender, targetSelectId) {
+        const categorySelect = document.getElementById(targetSelectId);
+        categorySelect.innerHTML = '<option value="" disabled selected>Loading...</option>';
+        categorySelect.disabled = true;
+
+        fetch('/api/categories/by-gender/' + gender)
+            .then(res => res.json())
+            .then(categories => {
+                categorySelect.innerHTML = '<option value="" disabled selected>Select category</option>';
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.id;
+                    option.textContent = cat.name;
+                    categorySelect.appendChild(option);
+                });
+                categorySelect.disabled = false;
+            });
+    }
+
+    function loadFilterCategories(gender) {
+        const select = document.getElementById('filterCategorySelect');
+        select.innerHTML = '<option value="">All Categories</option>';
+        if (!gender) return;
+        fetch('/api/categories/by-gender/' + gender)
+            .then(res => res.json())
+            .then(cats => {
+                cats.forEach(cat => {
+                    const o = document.createElement('option');
+                    o.value = cat.id;
+                    o.textContent = cat.name;
+                    select.appendChild(o);
+                });
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const gender     = document.getElementById('filterGenderSelect').value;
+        const selectedId = /*[[${categoryId}]]*/ null;
+        if (gender) {
+            fetch('/api/categories/by-gender/' + gender)
+                .then(res => res.json())
+                .then(cats => {
+                    const select = document.getElementById('filterCategorySelect');
+                    select.innerHTML = '<option value="">All Categories</option>';
+                    cats.forEach(cat => {
+                        const o = document.createElement('option');
+                        o.value = cat.id;
+                        o.textContent = cat.name;
+                        if (selectedId && cat.id == selectedId) o.selected = true;
+                        select.appendChild(o);
+                    });
+                });
+        }
+    });
+</script>
+</body>
+</html>

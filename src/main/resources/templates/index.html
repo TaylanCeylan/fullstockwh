@@ -5,15 +5,196 @@
     <title>Fullstockwh - Homepage</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .product-card { border: none; transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+        }
+        .product-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.10) !important;
+
+        }
+        .img-placeholder {
+            background-color: #e9ecef;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #adb5bd;
+        }
+
+        .accordion-button::after                        { display: none; }
+        .accordion-button:not(.collapsed)               { box-shadow: none; }
+        .accordion-arrow                                { transition: transform 0.3s ease; transform: rotate(0deg); }
+        .accordion-button:not(.collapsed) .accordion-arrow { transform: rotate(180deg); }
+
+        .row {
+            align-items: flex-start;
+        }
+
+        aside {
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+            z-index: 10;
+        }
+        
+        .sidebar-floating {
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+    </style>
 </head>
 <body>
 
-<div th:replace="~{fragments/navbar :: header}"></div>
+<div th:replace="~{fragments/header :: header}"></div>
 
-<div class="container mt-4">
-    <h1></h1>
+<div class="container-fluid mt-4">
+    <div class="row">
+
+        <aside class="col-md-3 col-lg-2">
+            <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+        </aside>
+
+        <main class="col-md-9 col-lg-10">
+
+            <form th:action="@{/}" method="get" class="mb-4">
+                <input type="hidden" name="gender"     th:value="${gender}"/>
+                <input type="hidden" name="categoryId" th:value="${categoryId}"/>
+                <input type="hidden" name="minPrice"   th:value="${minPrice}"/>
+                <input type="hidden" name="maxPrice"   th:value="${maxPrice}"/>
+
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           th:value="${search}"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="Search by name, description, category, or gender...">
+                    <button type="submit" class="btn btn-dark px-4">Search</button>
+                    <a th:if="${search != null and !search.isBlank()}"
+                       th:href="@{/(gender=${gender}, categoryId=${categoryId}, minPrice=${minPrice}, maxPrice=${maxPrice})}"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+            </form>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold" th:text="${pageTitle}">All Products</h2>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted"
+                          th:text="${products.size() + ' products found'}">0 products found</span>
+                    <select id="sortSelect" class="form-select form-select-sm" style="width:180px;"
+                            onchange="applySort(this.value)">
+                        <option value="recommended"
+                                th:selected="${currentSort == null or currentSort == '' or currentSort == 'recommended'}">
+                            Recommended
+                        </option>
+                        <option value="price_asc"  th:selected="${currentSort == 'price_asc'}">Price: Low to High</option>
+                        <option value="price_desc" th:selected="${currentSort == 'price_desc'}">Price: High to Low</option>
+                    </select>
+                </div>
+            </div>
+
+
+            <div class="d-flex flex-wrap gap-2 mb-3"
+                 th:if="${(gender != null and !gender.isBlank()) or
+                          (minPrice != null) or (maxPrice != null)}">
+                <span th:if="${gender != null and !gender.isBlank()}"
+                      class="badge bg-dark px-3 py-2">
+                    <i class="bi bi-person me-1"></i>
+                    <span th:text="${gender}"></span>
+                </span>
+                <span th:if="${minPrice != null or maxPrice != null}"
+                      class="badge bg-secondary px-3 py-2">
+                    ₺<span th:text="${minPrice != null ? minPrice : '0'}"></span>
+                    –
+                    ₺<span th:text="${maxPrice != null ? maxPrice : '∞'}"></span>
+                </span>
+                <a th:href="@{/}" class="badge bg-light text-dark border text-decoration-none px-3 py-2">
+                    <i class="bi bi-x me-1"></i>Clear all
+                </a>
+            </div>
+
+
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4">
+                <div class="col" th:each="product : ${products}">
+                    <div class="card h-100 shadow-sm product-card">
+                        <div class="img-placeholder rounded-top">
+                            <i class="bi bi-image display-4"></i>
+                        </div>
+
+                        <div class="card-body d-flex flex-column">
+
+
+                            <div class="mb-2 d-flex flex-wrap gap-1">
+                                <span class="badge bg-secondary"
+                                      th:text="${product.gender}">UNISEX</span>
+                                <span class="badge bg-light text-primary border"
+                                      th:text="${product.categoryName != null ? product.categoryName : 'General'}">
+                                    Category
+                                </span>
+                            </div>
+
+                            <h5 class="card-title fw-bold text-dark"
+                                th:text="${product.name}">Product Name</h5>
+
+                            <p class="card-text text-muted small"
+                               th:text="${#strings.abbreviate(product.description, 60)}">
+                                No description provided.
+                            </p>
+
+
+                            <div class="mt-2 mb-2 d-flex align-items-center gap-2">
+                                <span class="fs-6 fw-bold text-dark"
+                                      th:text="${product.price + '₺'}">₺0</span>
+                                <span class="badge small"
+                                      th:classappend="${product.totalStockStatus == 'IN_STOCK'} ? 'bg-success' :
+                                                      (${product.totalStockStatus == 'LOW_STOCK'} ? 'bg-warning text-dark' : 'bg-danger')"
+                                      th:text="${product.totalStockStatus == 'IN_STOCK'} ? 'In Stock' :
+                                               (${product.totalStockStatus == 'LOW_STOCK'} ? 'Low Stock' : 'Out of Stock')">
+                                </span>
+                            </div>
+
+                            <div class="mt-auto d-grid">
+                                <a th:href="@{/product/{id}(id=${product.id})}"
+                                   class="btn btn-outline-dark btn-sm">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="col-12 text-center py-5" th:if="${products.isEmpty()}">
+                    <i class="bi bi-box-seam display-1 text-muted"></i>
+                    <p class="mt-3 fs-5 text-muted">No products match your filters.</p>
+                    <a th:href="@{/}" class="btn btn-outline-dark mt-2">Clear Filters</a>
+                </div>
+            </div>
+        </main>
+
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function applySort(sortValue)
+    {
+        const params = new URLSearchParams(window.location.search);
+        if (sortValue && sortValue !== 'recommended') {
+            params.set('sort', sortValue);
+        } else {
+            params.delete('sort');
+        }
+    window.location.href = '/?' + params.toString();
+    }
+</script>
+
 </body>
 </html>
