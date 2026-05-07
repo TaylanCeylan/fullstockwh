@@ -152,7 +152,7 @@
 
                             <div class="mt-2 mb-2 d-flex align-items-center gap-2">
                                 <span class="fs-6 fw-bold text-dark"
-                                      th:text="${'₺' + product.price}">₺0</span>
+                                      th:text="${product.price + '₺'}">₺0</span>
                                 <span class="badge small"
                                       th:classappend="${product.totalStockStatus == 'IN_STOCK'} ? 'bg-success' :
                                                       (${product.totalStockStatus == 'LOW_STOCK'} ? 'bg-warning text-dark' : 'bg-danger')"
