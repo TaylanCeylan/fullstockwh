@@ -1,4 +1,4 @@
-package com.fullstockwh.cart.cart_item.dto;
+package com.fullstockwh.cart.dto;
 
 import lombok.Data;
 
