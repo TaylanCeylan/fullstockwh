@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Checkout - Fullstockwh</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card-number-font { letter-spacing: 3px; font-family: monospace; }
+
+        .saved-card-item {
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .saved-card-item.selected {
+            border-color: #198754;
+            background-color: #f0fdf4;
+        }
+
+        .add-card-toggle {
+            cursor: pointer;
+            user-select: none;
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 12px 16px;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .add-card-toggle:hover { border-color: #adb5bd; }
+        .add-card-toggle.active {
+            border-color: #212529;
+            background-color: #f8f9fa;
+        }
+
+        .toggle-icon { transition: transform 0.3s ease; }
+        .toggle-icon.rotated { transform: rotate(45deg); }
+
+        #newCardCollapse {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.4s ease;
+        }
+        #newCardCollapse.open { max-height: 700px; }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="container mt-5 mb-5" style="max-width: 900px;">
+
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <div style="width:36px;height:36px;border-radius:50%;background:#198754;color:#fff;
+                display:flex;align-items:center;justify-content:center;font-weight:700;">
+            <i class="bi bi-cart-fill"></i>
+        </div>
+        <div style="flex:1;height:2px;background:#198754;"></div>
+        <div style="width:36px;height:36px;border-radius:50%;background:#198754;color:#fff;
+                display:flex;align-items:center;justify-content:center;font-weight:700;">
+            1
+        </div>
+        <div style="flex:1;height:2px;background:#212529;"></div>
+        <div style="width:36px;height:36px;border-radius:50%;background:#212529;color:#fff;
+                display:flex;align-items:center;justify-content:center;font-weight:700;">
+            2
+        </div>
+        <div style="flex:1;height:2px;background:#dee2e6;"></div>
+        <div style="width:36px;height:36px;border-radius:50%;background:#dee2e6;color:#6c757d;
+                display:flex;align-items:center;justify-content:center;font-weight:700;">
+            <i class="bi bi-check"></i>
+        </div>
+    </div>
+
+    <h2 class="fw-bold mb-4">
+        <i class="bi bi-lock me-2 text-success"></i>Secure Checkout
+    </h2>
+
+    <div th:if="${paymentError != null}"
+         class="alert alert-danger alert-dismissible fade show mb-4">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span th:text="${paymentError}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Payment Method</h5>
+
+                    <form th:action="@{/checkout/pay}"
+                          th:object="${paymentRequest}"
+                          method="post"
+                          id="paymentForm">
+
+                        <div th:if="${savedCards != null and !savedCards.isEmpty()}" class="mb-3">
+
+                            <p class="text-muted small fw-semibold text-uppercase mb-2"
+                               style="letter-spacing:.08em;">Your Saved Cards</p>
+
+                            <div th:each="card : ${savedCards}" class="mb-2">
+                                <div class="d-flex align-items-center gap-3 p-3 saved-card-item"
+                                     th:id="'card-' + ${card.id}"
+                                     th:data-cardholder="${card.cardholderName}"
+                                     th:data-expiry="${card.expiryDate}"
+                                     onclick="selectSavedCard(this)">
+                                    <input type="radio" name="savedCardId"
+                                           th:value="${card.id}" class="flex-shrink-0">
+                                    <div>
+                                        <p class="fw-bold mb-0 small" th:text="${card.cardNickname}"></p>
+                                        <p class="text-muted mb-0 small"
+                                           style="font-family:monospace; letter-spacing:2px;"
+                                           th:text="${card.maskedNumber}"></p>
+                                        <p class="text-muted mb-0" style="font-size:0.72rem;">
+                                            Expires <span th:text="${card.expiryDate}"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center my-3">
+                                <hr class="flex-grow-1 m-0">
+                                <span class="px-3 text-muted small">or</span>
+                                <hr class="flex-grow-1 m-0">
+                            </div>
+                        </div>
+
+                        <div class="add-card-toggle d-flex align-items-center gap-2"
+                             id="addCardToggle"
+                             onclick="toggleNewCardForm()">
+                            <i class="bi bi-plus-circle-fill text-primary toggle-icon"
+                               id="addCardIcon"></i>
+                            <span class="fw-semibold small">Add New Card</span>
+                        </div>
+
+                        <div id="newCardCollapse">
+                            <div class="pt-3">
+
+                                <div id="newCardError"
+                                     class="alert alert-danger py-2 small mb-3"
+                                     style="display:none;">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    Please fill in all card details to continue.
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Cardholder Name</label>
+                                    <input type="text"
+                                           id="newCardholderName"
+                                           class="form-control"
+                                           placeholder="Name Surname">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Card Number</label>
+                                    <input type="text"
+                                           id="cardNumberDisplay"
+                                           class="form-control card-number-font"
+                                           placeholder="1234 5678 9012 3456"
+                                           maxlength="19"
+                                           oninput="formatCard(this)">
+                                    <div class="form-text text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        This is a demo — any number works.
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label fw-semibold">Expiry Date</label>
+                                        <input type="text"
+                                               id="newExpiryDate"
+                                               class="form-control"
+                                               placeholder="MM/YY" maxlength="5"
+                                               oninput="formatExpiry(this)">
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label fw-semibold">CVV</label>
+                                        <input type="text"
+                                               id="newCvv"
+                                               class="form-control"
+                                               placeholder="123" maxlength="3">
+                                    </div>
+                                </div>
+
+                                <div class="mb-2" id="cardNicknameSection" style="display:none;">
+                                    <input type="text" name="cardNickname"
+                                           class="form-control form-control-sm"
+                                           placeholder="Card nickname e.g. My Visa">
+                                </div>
+
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="saveCard" id="saveCardCheck"
+                                           onchange="toggleNickname(this)">
+                                    <label class="form-check-label small" for="saveCardCheck">
+                                        Save this card for future use
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="cardholderName" id="hiddenCardholderName">
+                        <input type="hidden" name="cardNumber" id="hiddenCardNumber">
+                        <input type="hidden" name="expiryDate" id="hiddenExpiryDate">
+                        <input type="hidden" name="cvv" id="hiddenCvv">
+
+                        <div id="paymentModeError"
+                             class="alert alert-danger py-2 small mt-3"
+                             style="display:none;">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Please select a saved card or add a new one.
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-success w-100 py-3 fw-bold mt-3">
+                            <i class="bi bi-lock-fill me-2"></i>
+                            Pay ₺<span th:text="${cart.totalAmount}">0.00</span>
+                        </button>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Order Summary</h5>
+
+                    <div th:if="${selectedAddress != null}"
+                         class="bg-light rounded p-3 mb-3">
+                        <p class="fw-semibold mb-1 small">
+                            <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                            Shipping to:
+                        </p>
+                        <p class="mb-0 text-muted small"
+                           th:text="${selectedAddress.fullAddress}"></p>
+                        <p class="mb-0 text-muted small"
+                           th:if="${selectedAddress.buildingDetails != null}"
+                           th:text="${selectedAddress.buildingDetails}"></p>
+                        <p class="mb-0 text-muted small">
+                            <span th:text="${selectedAddress.district}"></span>,
+                            <span th:text="${selectedAddress.city}"></span>
+                        </p>
+                    </div>
+
+                    <hr th:if="${selectedAddress != null}">
+
+                    <div th:each="item : ${cart.items}"
+                         class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <p class="fw-semibold mb-0 small"
+                               th:text="${item.productName}"></p>
+                            <p class="text-muted mb-0" style="font-size:0.75rem;">
+                                <span th:text="${item.color}"></span> /
+                                <span th:text="${item.size}"></span>
+                                · x<span th:text="${item.quantity}"></span>
+                            </p>
+                        </div>
+                        <span class="fw-semibold small"
+                              th:text="${'₺' + item.subtotal}"></span>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total</span>
+                        <span class="text-success"
+                              th:text="${'₺' + cart.totalAmount}">₺0.00</span>
+                    </div>
+
+                    <a th:href="@{/checkout/shipping}"
+                       class="btn btn-outline-secondary w-100 mt-3 btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Change Address
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let activeMode = null;
+    let newCardOpen = false;
+
+    function selectSavedCard(card) {
+        document.querySelectorAll('.saved-card-item').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('input[name="savedCardId"]').forEach(r => r.checked = false);
+
+        card.classList.add('selected');
+        card.querySelector('input[type="radio"]').checked = true;
+
+        document.getElementById('hiddenCardholderName').value = card.dataset.cardholder;
+        document.getElementById('hiddenExpiryDate').value = card.dataset.expiry;
+        document.getElementById('hiddenCardNumber').value = '1234567890123456';
+        document.getElementById('hiddenCvv').value = '000';
+
+        collapseNewCardForm();
+
+        activeMode = 'saved';
+        hideErrors();
+    }
+
+    function toggleNewCardForm() {
+        if (newCardOpen) {
+            collapseNewCardForm();
+            if (activeMode === 'new') activeMode = null;
+        } else {
+            openNewCardForm();
+        }
+    }
+
+    function openNewCardForm() {
+        document.querySelectorAll('.saved-card-item').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('input[name="savedCardId"]').forEach(r => r.checked = false);
+
+        document.getElementById('hiddenCardholderName').value = '';
+        document.getElementById('hiddenCardNumber').value = '';
+        document.getElementById('hiddenExpiryDate').value = '';
+        document.getElementById('hiddenCvv').value = '';
+
+        document.getElementById('newCardCollapse').classList.add('open');
+        document.getElementById('addCardIcon').classList.add('rotated');
+        document.getElementById('addCardToggle').classList.add('active');
+
+        newCardOpen = true;
+        activeMode  = 'new';
+        hideErrors();
+    }
+
+    function collapseNewCardForm() {
+        document.getElementById('newCardCollapse').classList.remove('open');
+        document.getElementById('addCardIcon').classList.remove('rotated');
+        document.getElementById('addCardToggle').classList.remove('active');
+
+        document.getElementById('newCardholderName').value = '';
+        document.getElementById('cardNumberDisplay').value = '';
+        document.getElementById('newExpiryDate').value = '';
+        document.getElementById('newCvv').value = '';
+
+        const saveCheck = document.getElementById('saveCardCheck');
+        saveCheck.checked = false;
+        document.getElementById('cardNicknameSection').style.display = 'none';
+
+        newCardOpen = false;
+    }
+
+    function formatCard(input) {
+        let v = input.value.replace(/\D/g, '').substring(0, 16);
+        input.value = v.replace(/(.{4})/g, '$1 ').trim();
+        document.getElementById('hiddenCardNumber').value = v;
+    }
+
+    function formatExpiry(input) {
+        let v = input.value.replace(/\D/g, '').substring(0, 4);
+        if (v.length >= 2) v = v.substring(0, 2) + '/' + v.substring(2);
+        input.value = v;
+        document.getElementById('hiddenExpiryDate').value = input.value;
+    }
+
+    function toggleNickname(checkbox) {
+        document.getElementById('cardNicknameSection').style.display =
+            checkbox.checked ? 'block' : 'none';
+    }
+
+    function hideErrors() {
+        document.getElementById('newCardError').style.display = 'none';
+        document.getElementById('paymentModeError').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const hasSavedCards = document.querySelectorAll('.saved-card-item').length > 0;
+        if (!hasSavedCards) {
+            openNewCardForm();
+        }
+
+        document.getElementById('newCardholderName').addEventListener('input', function () {
+            document.getElementById('hiddenCardholderName').value = this.value;
+        });
+        document.getElementById('newExpiryDate').addEventListener('input', function () {
+            document.getElementById('hiddenExpiryDate').value = this.value;
+        });
+        document.getElementById('newCvv').addEventListener('input', function () {
+            document.getElementById('hiddenCvv').value = this.value;
+        });
+
+        document.getElementById('paymentForm').addEventListener('submit', function (e) {
+
+            if (activeMode === null) {
+                const checkedRadio = document.querySelector('input[name="savedCardId"]:checked');
+                if (checkedRadio) {
+                    selectSavedCard(checkedRadio.closest('.saved-card-item'));
+                }
+            }
+
+            if (activeMode === 'saved') return;
+
+            if (activeMode === 'new') {
+                const name = document.getElementById('hiddenCardholderName').value.trim();
+                const number = document.getElementById('hiddenCardNumber').value.trim();
+                const expiry = document.getElementById('hiddenExpiryDate').value.trim();
+                const cvv = document.getElementById('hiddenCvv').value.trim();
+
+                if (!name || !number || !expiry || !cvv) {
+                    e.preventDefault();
+                    document.getElementById('newCardError').style.display = 'block';
+                    document.getElementById('newCardCollapse').scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+                return;
+            }
+
+            e.preventDefault();
+            document.getElementById('paymentModeError').style.display = 'block';
+        });
+    });
+</script>
+</body>
+</html>

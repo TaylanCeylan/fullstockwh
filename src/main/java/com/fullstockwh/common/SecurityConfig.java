@@ -43,6 +43,10 @@ public class SecurityConfig
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/user/**").hasAnyRole("ADMIN", "MANAGER", "USER")
+                        .requestMatchers("/product/**").permitAll()
+                        .requestMatchers("/cart/**").authenticated()
+                        .requestMatchers("/checkout/**").authenticated()
+                        .requestMatchers("/orders").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

@@ -3,7 +3,7 @@
 <body>
 
 <div th:fragment="userSidebar(activeItem)" class="list-group shadow-sm border-0">
-    <a th:href="@{/user/update}"
+    <a th:href="@{/user}"
        class="list-group-item list-group-item-action p-3 border-0"
        th:classappend="${activeItem == 'settings' ? 'active' : ''}"
        style="border-radius: 10px 10px 0 0;">
@@ -19,6 +19,11 @@
        th:classappend="${activeItem == 'addresses' ? 'active' : ''}"
        style="border-radius: 0 0 10px 10px;">
         <i class="bi bi-geo-alt me-2"></i> Addresses
+    </a>
+    <a th:href="@{/user/payments}"
+       th:classappend="${activeItem == 'payments'} ? 'active' : ''"
+       class="list-group-item list-group-item-action p-3 border-0">
+        <i class="bi bi-credit-card me-2"></i> Payments
     </a>
 </div>
 

@@ -1,28 +1,30 @@
 package com.fullstockwh.cart;
 
+import com.fullstockwh.cart.dto.AddToCartRequest;
+import com.fullstockwh.cart.dto.CartResponse;
+import com.fullstockwh.cart.dto.RemoveFromCartRequest;
+import com.fullstockwh.cart.dto.UpdateCartRequest;
 import com.fullstockwh.user.UserEntity;
-import com.fullstockwh.user.UserRepository;
-import org.apache.catalina.User;
+import com.fullstockwh.user.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @Controller
+@RequiredArgsConstructor
 public class CartController
 {
-    private final CartServiceImpl cartService;
-    private final UserRepository userRepository;
-    private final CartRepository cartRepository;
+    private final CartService cartService;
+    private final UserService userService;
 
-    public CartController(CartServiceImpl cartService, UserRepository userRepository, CartRepository cartRepository)
-    {
-        this.cartService = cartService;
-        this.userRepository = userRepository;
-        this.cartRepository = cartRepository;
+    private UserEntity getUser(UserDetails userDetails) {
+        return userService.findByEmail(userDetails.getUsername());
     }
 
     @GetMapping("/cart")
@@ -33,43 +35,57 @@ public class CartController
             return "redirect:/login";
         }
 
-        UserEntity currentUser = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        Cart cart = cartRepository.findByUser(currentUser).orElse(new Cart());
-
+        CartResponse cart = cartService.getCart(getUser(userDetails));
         model.addAttribute("cart", cart);
-
         return "cart";
     }
 
     @PostMapping("/cart/add")
     public String addToCart(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("variantId") Long variantId,
-            @RequestParam("quantity") int quantity) {
+            @ModelAttribute AddToCartRequest request)
+    {
+        if (userDetails == null)
+        {
+            return "redirect:/login";
+        }
 
-        UserEntity currentUser = userRepository.findByEmail(userDetails.getUsername()).orElseThrow(() -> new RuntimeException("User not found"));
-
-        cartService.addToCart(currentUser, variantId, quantity);
+        cartService.addToCart(getUser(userDetails), request);
 
         return "redirect:/cart";
     }
 
     @PostMapping("/cart/remove")
     public String removeFromCart(@AuthenticationPrincipal UserDetails userDetails,
-                                 @RequestParam("variantId") Long variantId) {
-
+                                 @ModelAttribute RemoveFromCartRequest request)
+    {
         if (userDetails == null)
         {
             return "redirect:/login";
         }
 
-        UserEntity currentUser = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        cartService.removeFromCart(currentUser, variantId);
+        cartService.removeFromCart(getUser(userDetails),  request);
 
         return "redirect:/cart";
+    }
+
+    @PostMapping("/cart/update")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateQuantity(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody UpdateCartRequest request) {
+        if (userDetails == null) return ResponseEntity.status(401).build();
+
+        CartResponse cart = cartService.updateQuantity(getUser(userDetails), request);
+
+        double itemSubtotal = cart.getItems().stream()
+                .filter(i -> i.getVariantId().equals(request.getVariantId()))
+                .mapToDouble(i -> i.getSubtotal().doubleValue())
+                .findFirst().orElse(0);
+
+        return ResponseEntity.ok(Map.of(
+                "itemSubtotal", itemSubtotal,
+                "cartTotal",    cart.getTotalAmount().doubleValue()
+        ));
     }
 }

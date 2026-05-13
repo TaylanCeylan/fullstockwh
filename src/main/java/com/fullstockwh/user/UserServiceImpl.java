@@ -1,23 +1,50 @@
 package com.fullstockwh.user;
 
-import com.fullstockwh.user.dto.UserUpdateRequest;
+import com.fullstockwh.user.dto.*;
+import com.fullstockwh.order.OrderRepository;
+import com.fullstockwh.user.address.Address;
+import com.fullstockwh.user.address.AddressRepository;
+import com.fullstockwh.user.payment_card.PaymentCard;
+import com.fullstockwh.user.payment_card.PaymentCardRepository;
+import com.fullstockwh.user.dto.PaymentCardCreateRequest;
+import com.fullstockwh.user.dto.PaymentCardDeleteRequest;
+import com.fullstockwh.user.dto.PaymentCardResponse;
+import java.time.YearMonth;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 class UserServiceImpl implements UserService
 {
     private final UserRepository userRepository;
+    private final AddressRepository addressRepository;
+    private final OrderRepository orderRepository;
+    private final PaymentCardRepository paymentCardRepository;
+
+    private UserEntity getCurrentUser() {
+        String email = Objects.requireNonNull(
+                SecurityContextHolder.getContext().getAuthentication()).getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 
     @Override
     public UserEntity findById(Long id)
     {
         return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found! ID: " + id));
+    }
+
+    @Override
+    public UserEntity findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     @Override
@@ -57,5 +84,165 @@ class UserServiceImpl implements UserService
         {
             dbUser.setBirthDate(user.getBirthDate());
         }
+    }
+
+    @Override
+    public List<AddressResponse> getAddresses() {
+        return addressRepository.findByUserAndTemporaryFalse(getCurrentUser())
+                .stream()
+                .map(this::mapToAddressResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public AddressResponse addAddress(AddressCreateRequest request) {
+
+        boolean titleExists = addressRepository
+                .existsByUserAndAddressTitleIgnoreCase(getCurrentUser(), request.getAddressTitle());
+        if (request.getAddressTitle() != null && !request.getAddressTitle().isBlank() && titleExists) {
+            throw new RuntimeException("You already have an address with this title.");
+        }
+
+        Address address = Address.builder()
+                .user (getCurrentUser())
+                .addressTitle(request.getAddressTitle())
+                .buildingDetails(request.getBuildingDetails())
+                .city (request.getCity())
+                .district (request.getDistrict())
+                .neighborhood(request.getNeighborhood())
+                .fullAddress (request.getFullAddress())
+                .latitude (request.getLatitude())
+                .longitude (request.getLongitude())
+                .isTemporary (request.isTemporary())
+                .build();
+        return mapToAddressResponse(addressRepository.save(address));
+    }
+
+    @Override
+    @Transactional
+    public void deleteAddress(AddressDeleteRequest request) {
+        Address address = addressRepository
+                .findByIdAndUser(request.getId(), getCurrentUser())
+                .orElseThrow(() -> new RuntimeException("Address not found"));
+
+        orderRepository.findByShippingAddressId(request.getId())
+                .forEach(o -> {
+                    o.setShippingAddress(null);
+                    orderRepository.save(o);
+                });
+
+        addressRepository.delete(address);
+    }
+
+
+    @Override
+    @Transactional
+    public AddressResponse updateAddress(Long id, AddressUpdateRequest request) {
+        Address address = addressRepository.findByIdAndUser(id, getCurrentUser())
+                .orElseThrow(() -> new RuntimeException("Address not found"));
+
+        if (request.getAddressTitle()!= null) address.setAddressTitle(request.getAddressTitle());
+        if (request.getCity()!= null) address.setCity(request.getCity());
+        if (request.getDistrict()!= null) address.setDistrict(request.getDistrict());
+        if (request.getNeighborhood()!= null) address.setNeighborhood(request.getNeighborhood());
+        if (request.getFullAddress()!= null) address.setFullAddress(request.getFullAddress());
+        if (request.getBuildingDetails()!= null) address.setBuildingDetails(request.getBuildingDetails());
+        if (request.getLatitude()!= null) address.setLatitude(request.getLatitude());
+        if (request.getLongitude()!= null) address.setLongitude(request.getLongitude());
+
+        return mapToAddressResponse(addressRepository.save(address));
+    }
+
+    @Override
+    public AddressResponse getAddressById(Long id) {
+        Address address = addressRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Address not found"));
+        return mapToAddressResponse(address);
+    }
+
+    @Override
+    public List<PaymentCardResponse> getPaymentCards() {
+        return paymentCardRepository
+                .findByUserAndTemporaryFalse(getCurrentUser())
+                .stream()
+                .map(this::mapToCardResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public PaymentCardResponse addPaymentCard(PaymentCardCreateRequest request) {
+
+        if (isCardExpired(request.getExpiryDate())) {
+            throw new RuntimeException("Card is expired");
+        }
+
+        if (paymentCardRepository.existsByUserAndLastFourDigitsAndExpiryDate(
+                getCurrentUser(),
+                request.getLastFourDigits(),
+                request.getExpiryDate())) {
+            throw new RuntimeException("This card is already saved.");
+        }
+
+        PaymentCard card = PaymentCard.builder()
+                .user(getCurrentUser())
+                .cardNickname(request.getCardNickname())
+                .cardholderName(request.getCardholderName())
+                .lastFourDigits(request.getLastFourDigits())
+                .expiryDate(request.getExpiryDate())
+                .isTemporary(request.isTemporary())
+                .build();
+
+        return mapToCardResponse(paymentCardRepository.save(card));
+    }
+
+    @Override
+    @Transactional
+    public void deletePaymentCard(PaymentCardDeleteRequest request) {
+        PaymentCard card = paymentCardRepository
+                .findByIdAndUser(request.getId(), getCurrentUser())
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+        paymentCardRepository.delete(card);
+    }
+
+    @Override
+    public PaymentCardResponse getPaymentCardById(Long id) {
+        PaymentCard card = paymentCardRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+        return mapToCardResponse(card);
+    }
+
+
+    private boolean isCardExpired(String expiryDate) {
+        String[] parts = expiryDate.split("/");
+        int month = Integer.parseInt(parts[0]);
+        int year = 2000 + Integer.parseInt(parts[1]);
+        return YearMonth.of(year, month).isBefore(YearMonth.now());
+    }
+
+    private PaymentCardResponse mapToCardResponse(PaymentCard card) {
+        return PaymentCardResponse.builder()
+                .id (card.getId())
+                .cardNickname (card.getCardNickname())
+                .cardholderName(card.getCardholderName())
+                .lastFourDigits(card.getLastFourDigits())
+                .expiryDate (card.getExpiryDate())
+                .maskedNumber ("**** **** **** " + card.getLastFourDigits())
+                .build();
+    }
+
+    private AddressResponse mapToAddressResponse(Address address) {
+        return AddressResponse.builder()
+                .id (address.getId())
+                .addressTitle(address.getAddressTitle())
+                .buildingDetails(address.getBuildingDetails())
+                .city (address.getCity())
+                .district (address.getDistrict())
+                .neighborhood(address.getNeighborhood())
+                .fullAddress (address.getFullAddress())
+                .latitude (address.getLatitude())
+                .longitude (address.getLongitude())
+                .build();
     }
 }
