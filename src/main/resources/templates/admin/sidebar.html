@@ -27,6 +27,12 @@
                 Products
             </a>
         </li>
+        <li>
+            <a th:href="@{/admin/orders}" class="nav-link text-white"
+               th:classappend="${activePage == 'orders' ? 'active' : ''}">
+                Orders
+            </a>
+        </li>
     </ul>
 
     <hr>

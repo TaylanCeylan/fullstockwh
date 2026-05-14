@@ -20,5 +20,13 @@ public interface OrderRepository extends JpaRepository<Order, Long>
             "ORDER BY o.orderDate DESC")
     List<Order> findByUserWithItems(@Param("user") UserEntity user);
     List<Order> findByShippingAddressId(Long addressId);
+
+    @Query("SELECT DISTINCT o FROM Order o " +
+            "LEFT JOIN FETCH o.user " +
+            "LEFT JOIN FETCH o.items i " +
+            "LEFT JOIN FETCH i.productVariant v " +
+            "LEFT JOIN FETCH v.product " +
+            "ORDER BY o.orderDate DESC")
+    List<Order> findRecentOrdersWithDetails(org.springframework.data.domain.Pageable pageable);
 }
 
