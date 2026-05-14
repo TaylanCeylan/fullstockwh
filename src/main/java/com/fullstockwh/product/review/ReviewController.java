@@ -1,10 +1,10 @@
 package com.fullstockwh.product.review;
 
-import com.fullstockwh.product.review.dto.ReviewCreateRequest;
 import com.fullstockwh.product.review.dto.ReviewResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -13,8 +13,8 @@ public class ReviewController
 {
     private final ReviewService reviewService;
 
-    @PostMapping("/add")
-    public ResponseEntity<ReviewResponse> addReview(@RequestBody ReviewCreateRequest request) {
-        return ResponseEntity.ok(reviewService.saveReview(request));
+    @GetMapping("/product/{productId}")
+    public ResponseEntity<List<ReviewResponse>> getReviews(@PathVariable Long productId) {
+        return ResponseEntity.ok(reviewService.getReviewsByProductId(productId));
     }
 }

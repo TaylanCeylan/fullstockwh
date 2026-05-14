@@ -10,13 +10,9 @@ public class ReviewCreateRequest
 {
     private String comment;
 
-    @NotNull(message = "rating is reqired!")
+    @NotNull(message = "Rating is required!")
     @Min(1) @Max(5)
     private Integer rating;
 
-    @NotNull(message = "Product Id is required!")
     private Long productId;
-
-    @NotNull(message = "UserId is required!")
-    private Long userId;
 }
