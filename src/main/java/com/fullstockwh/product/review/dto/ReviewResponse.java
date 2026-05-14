@@ -16,6 +16,7 @@ public class ReviewResponse
     private String comment;
     private Integer rating;
     private String userName;
+    private String userFullName;
     private String productName;
     private LocalDateTime createdAt;
 }

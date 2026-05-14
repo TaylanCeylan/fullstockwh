@@ -2,13 +2,14 @@ package com.fullstockwh.product.review;
 
 import com.fullstockwh.product.review.dto.ReviewCreateRequest;
 import com.fullstockwh.product.review.dto.ReviewResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.fullstockwh.user.UserEntity;
 import java.util.List;
 
 public interface ReviewService
 {
-    @PreAuthorize("hasRole('USER')") // Only Customers can Review
-    ReviewResponse saveReview(ReviewCreateRequest request);
+    ReviewResponse saveReview(ReviewCreateRequest request, UserEntity user);
 
     List<ReviewResponse> getReviewsByProductId(Long productId);
+
+    boolean canUserReview(Long productId, UserEntity user);
 }
