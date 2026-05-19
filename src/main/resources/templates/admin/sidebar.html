@@ -33,6 +33,12 @@
                 Orders
             </a>
         </li>
+        <li>
+            <a th:href="@{/admin/shipments}" class="nav-link text-white"
+               th:classappend="${activePage == 'shipments' ? 'active' : ''}">
+                Shipments
+            </a>
+        </li>
     </ul>
 
     <hr>

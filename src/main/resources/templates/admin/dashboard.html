@@ -32,7 +32,16 @@
                         </div>
                     </div>
                 </div>
-
+                <div class="col-md-4 mb-4">
+                    <div class="card card-stat bg-danger text-white shadow" style="cursor:pointer;"
+                         data-bs-toggle="modal" data-bs-target="#lowStockModal">
+                        <div class="card-body py-4">
+                            <h6 class="text-uppercase opacity-75">Low Stock</h6>
+                            <h1 class="display-5 fw-bold" th:text="${lowStockCount ?: '0'}">0</h1>
+                            <div class="small opacity-75">variants below 5 units</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-md-4 mb-4">
                     <div class="card card-stat bg-success text-white shadow">
                         <div class="card-body py-4">
@@ -86,6 +95,7 @@
                                             <th>Total</th>
                                             <th>Status</th>
                                             <th>Date</th>
+                                            <th>Carbon</th>
                                         </tr>
                                         </thead>
                                         <tbody>
@@ -107,6 +117,11 @@
                                                 </span>
                                             </td>
                                             <td class="text-muted" th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></td>
+                                            <td class="text-muted small"
+                                                th:text="${order.shipment != null and order.shipment.carbonFootprintKg != null
+                                                         ? #numbers.formatDecimal(order.shipment.carbonFootprintKg, 1, 2) + ' kg CO2'
+                                                         : '-'}">
+                                            </td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -162,5 +177,50 @@
             }
         });
     </script>
+    <div class="modal fade" id="lowStockModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-danger">Low Stock Variants</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div th:if="${#lists.isEmpty(lowStockVariants)}" class="text-center text-muted py-4">
+                        All variants are sufficiently stocked.
+                    </div>
+                    <div th:if="${not #lists.isEmpty(lowStockVariants)}" class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Product</th>
+                                <th>SKU</th>
+                                <th>Color</th>
+                                <th>Size</th>
+                                <th>Stock</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="v : ${lowStockVariants}">
+                                <td class="ps-4 fw-semibold" th:text="${v.product.name}"></td>
+                                <td class="font-monospace small text-muted" th:text="${v.sku}"></td>
+                                <td th:text="${v.color}"></td>
+                                <td th:text="${v.size}"></td>
+                                <td>
+                                <span th:classappend="${v.stockQuantity == 0} ? 'bg-danger' : 'bg-warning text-dark'"
+                                      class="badge"
+                                      th:text="${v.stockQuantity} + ' units'"></span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a th:href="@{/admin/products}" class="btn btn-dark">Go to Products</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

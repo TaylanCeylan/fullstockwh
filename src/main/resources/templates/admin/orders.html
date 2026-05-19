@@ -25,6 +25,8 @@
 
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold mb-0">Orders</h3>
+                <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                <div th:if="${error}"   class="alert alert-danger"  th:text="${error}"></div>
                 <span class="text-muted" th:text="${allOrders != null ? #lists.size(allOrders) : 0} + ' total orders'"></span>
             </div>
 
@@ -38,6 +40,9 @@
                                 <option value="PENDING"  th:selected="${selectedStatus == 'PENDING'}">Pending</option>
                                 <option value="SUCCESS"  th:selected="${selectedStatus == 'SUCCESS'}">Success</option>
                                 <option value="FAILED"   th:selected="${selectedStatus == 'FAILED'}">Failed</option>
+                                <option value="SHIPPED"   th:selected="${selectedStatus == 'SHIPPED'}">Shipped</option>
+                                <option value="DELIVERED" th:selected="${selectedStatus == 'DELIVERED'}">Delivered</option>
+                                <option value="CANCELLED" th:selected="${selectedStatus == 'CANCELLED'}">Cancelled</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -66,6 +71,7 @@
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th>Date</th>
+                                <th>Actions</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -86,10 +92,31 @@
                                             <span th:case="'SUCCESS'" class="badge bg-success">Success</span>
                                             <span th:case="'PENDING'" class="badge bg-warning text-dark">Pending</span>
                                             <span th:case="'FAILED'" class="badge bg-danger">Failed</span>
-                                            <span th:case="*" class="badge bg-secondary" th:text="${order.status}"></span>
+                                            <span th:case="'SHIPPED'"   class="badge bg-primary">Shipped</span>
+                                            <span th:case="'DELIVERED'" class="badge bg-info text-dark">Delivered</span>
+                                            <span th:case="'CANCELLED'" class="badge bg-secondary">Cancelled</span>
                                         </span>
                                 </td>
                                 <td class="text-muted" th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></td>
+                                <td>
+                                    <a th:if="${order.status.name() == 'SUCCESS'}"
+                                       th:href="@{'/admin/orders/' + ${order.id} + '/ship'}"
+                                       class="btn btn-sm btn-dark">
+                                        Ship Order
+                                    </a>
+                                    <form th:if="${order.status.name() == 'SHIPPED'}"
+                                          th:action="@{'/admin/orders/' + ${order.id} + '/deliver'}"
+                                          method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            Mark Delivered
+                                        </button>
+                                    </form>
+                                    <a th:if="${order.status.name() == 'DELIVERED'}"
+                                       th:href="@{'/orders/' + ${order.id} + '/track'}"
+                                       class="btn btn-sm btn-outline-secondary" target="_blank">
+                                        View Tracking
+                                    </a>
+                                </td>
                             </tr>
                             </tbody>
                         </table>
