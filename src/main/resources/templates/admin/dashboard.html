@@ -32,7 +32,16 @@
                         </div>
                     </div>
                 </div>
-
+                <div class="col-md-4 mb-4">
+                    <div class="card card-stat bg-danger text-white shadow" style="cursor:pointer;"
+                         data-bs-toggle="modal" data-bs-target="#lowStockModal">
+                        <div class="card-body py-4">
+                            <h6 class="text-uppercase opacity-75">Low Stock</h6>
+                            <h1 class="display-5 fw-bold" th:text="${lowStockCount ?: '0'}">0</h1>
+                            <div class="small opacity-75">variants below 5 units</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-md-4 mb-4">
                     <div class="card card-stat bg-success text-white shadow">
                         <div class="card-body py-4">
@@ -59,56 +68,159 @@
                         </div>
                         <div class="card-body">
                             <div style="position: relative; height: 400px; width: 100%;">
-                            <canvas id="categoryChart"></canvas>
+                                <canvas id="categoryChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0 fw-bold">Last 10 Orders</h5>
+                                <span class="badge bg-secondary" th:text="${recentOrders != null ? #lists.size(recentOrders) : 0} + ' orders'">0 orders</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div th:if="${recentOrders == null or #lists.isEmpty(recentOrders)}" class="text-center text-muted py-5">
+                                    <p class="mb-0">No orders yet.</p>
+                                </div>
+                                <div th:if="${recentOrders != null and not #lists.isEmpty(recentOrders)}" class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-4">#</th>
+                                            <th>Customer</th>
+                                            <th>Products</th>
+                                            <th>Total</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                            <th>Carbon</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="order : ${recentOrders}">
+                                            <td class="ps-4 fw-semibold text-muted" th:text="'#' + ${order.id}"></td>
+                                            <td>
+                                                <span th:text="${order.user != null ? order.user.firstName + ' ' + order.user.lastName : 'Guest'}"></span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted" th:text="${order.totalQuantity} + ' pieces'"></span>
+                                            </td>
+                                            <td class="fw-semibold" th:text="${#numbers.formatDecimal(order.totalPrice, 1, 2) + '₺'}"></td>
+                                            <td>
+                                                <span th:switch="${order.status.name()}">
+                                                    <span th:case="'SUCCESS'" class="badge bg-success">Success</span>
+                                                    <span th:case="'PENDING'" class="badge bg-warning text-dark">Pending</span>
+                                                    <span th:case="'FAILED'" class="badge bg-danger">Failed</span>
+                                                    <span th:case="*" class="badge bg-secondary" th:text="${order.status}"></span>
+                                                </span>
+                                            </td>
+                                            <td class="text-muted" th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></td>
+                                            <td class="text-muted small"
+                                                th:text="${order.shipment != null and order.shipment.carbonFootprintKg != null
+                                                         ? #numbers.formatDecimal(order.shipment.carbonFootprintKg, 1, 2) + ' kg CO2'
+                                                         : '-'}">
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             </div>
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script th:inline="javascript">
-    const categoryStats = [[${categoryStats}]];
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        const categoryStats = [[${categoryStats}]];
 
-    const labels = Object.keys(categoryStats);
-    const data = Object.values(categoryStats);
+        const labels = Object.keys(categoryStats);
+        const data = Object.values(categoryStats);
 
-    const ctx = document.getElementById('categoryChart').getContext('2d');
+        const ctx = document.getElementById('categoryChart').getContext('2d');
 
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Product Counts',
-                data: data,
-                backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                borderColor: 'rgba(52, 152, 219, 1)',
-                borderWidth: 1,
-                borderRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Product Counts',
+                    data: data,
+                    backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
                     }
                 }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
             }
-        }
-    });
-</script>
+        });
+    </script>
+    <div class="modal fade" id="lowStockModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-danger">Low Stock Variants</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div th:if="${#lists.isEmpty(lowStockVariants)}" class="text-center text-muted py-4">
+                        All variants are sufficiently stocked.
+                    </div>
+                    <div th:if="${not #lists.isEmpty(lowStockVariants)}" class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Product</th>
+                                <th>SKU</th>
+                                <th>Color</th>
+                                <th>Size</th>
+                                <th>Stock</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="v : ${lowStockVariants}">
+                                <td class="ps-4 fw-semibold" th:text="${v.product.name}"></td>
+                                <td class="font-monospace small text-muted" th:text="${v.sku}"></td>
+                                <td th:text="${v.color}"></td>
+                                <td th:text="${v.size}"></td>
+                                <td>
+                                <span th:classappend="${v.stockQuantity == 0} ? 'bg-danger' : 'bg-warning text-dark'"
+                                      class="badge"
+                                      th:text="${v.stockQuantity} + ' units'"></span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a th:href="@{/admin/products}" class="btn btn-dark">Go to Products</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

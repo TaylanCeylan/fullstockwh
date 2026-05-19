@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Methods - Fullstockwh</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f7f6; }
+        .profile-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            background-color: #ffffff;
+        }
+        .form-label { font-weight: 600; color: #495057; }
+
+        .add-card-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        .toggle-icon.rotated { transform: rotate(45deg); }
+        #cardFormCollapse {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.4s ease;
+        }
+        #cardFormCollapse.open { max-height: 600px; }
+
+        .card-chip {
+            font-family: monospace;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="container mt-5 mb-5">
+    <div class="row">
+
+        <div class="col-md-3 mb-4">
+            <div th:replace="~{user/sidebar :: userSidebar('payments')}"></div>
+        </div>
+
+        <div class="col-md-9">
+
+            <div th:if="${successMessage != null}"
+                 class="alert alert-success alert-dismissible fade show mb-3">
+                <i class="bi bi-check-circle me-2"></i>
+                <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage != null}"
+                 class="alert alert-danger alert-dismissible fade show mb-3">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="card profile-card p-4 mb-4">
+                <div class="d-flex align-items-center gap-2 add-card-header"
+                     onclick="toggleCardForm()">
+                    <i class="bi bi-plus-circle-fill text-primary fs-5 toggle-icon"
+                       id="toggleIcon"></i>
+                    <h5 class="fw-bold mb-0">Add New Card</h5>
+                </div>
+
+                <div id="cardFormCollapse">
+                    <hr class="mt-3 mb-4">
+                    <form th:action="@{/user/payments/add}"
+                          th:object="${cardCreateRequest}"
+                          method="post">
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Card Nickname</label>
+                                <input type="text" th:field="*{cardNickname}"
+                                       class="form-control"
+                                       placeholder="e.g. My Visa, Work Card" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cardholder Name</label>
+                                <input type="text" th:field="*{cardholderName}"
+                                       class="form-control"
+                                       placeholder="Name Lastname" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Card Number</label>
+                                <input type="text" id="cardNumberInput"
+                                       class="form-control"
+                                       placeholder="1234 5678 9012 3456"
+                                       maxlength="19" required
+                                       oninput="formatAndExtract(this)">
+                                <div class="form-text text-muted">
+                                    Only the last 4 digits will be saved.
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Expiry Date</label>
+                                <input type="text" th:field="*{expiryDate}"
+                                       id="expiryInput"
+                                       class="form-control"
+                                       placeholder="MM/YY" maxlength="5"
+                                       required
+                                       oninput="formatExpiry(this)"
+                                       onblur="validateExpiry(this)">
+                                <div class="form-text text-danger d-none"
+                                     id="expiryError">
+                                    Card is expired.
+                                </div>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-dark w-100">
+                                    <i class="bi bi-save me-2"></i>Save Card
+                                </button>
+                            </div>
+                        </div>
+
+                        <input type="hidden"
+                               th:field="*{lastFourDigits}"
+                               id="lastFourInput">
+
+                    </form>
+                </div>
+            </div>
+
+            <h5 class="fw-bold mb-3">
+                <i class="bi bi-credit-card me-2"></i>Saved Cards
+            </h5>
+
+            <div th:if="${cards.isEmpty()}"
+                 class="card profile-card p-5 text-center text-muted">
+                <i class="bi bi-credit-card display-4 mb-3"></i>
+                <p class="mb-0">No saved cards yet.</p>
+            </div>
+
+            <div th:each="card : ${cards}"
+                 class="card profile-card p-4 mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold mb-1">
+                            <i class="bi bi-credit-card-fill text-primary me-2"></i>
+                            <span th:text="${card.cardNickname}"></span>
+                        </h6>
+                        <p class="card-chip mb-1 text-muted"
+                           th:text="${card.maskedNumber}"></p>
+                        <p class="mb-0 text-muted small">
+                            <span th:text="${card.cardholderName}"></span>
+                            · Expires <span th:text="${card.expiryDate}"></span>
+                        </p>
+                    </div>
+                    <form th:action="@{/user/payments/delete/{id}(id=${card.id})}"
+                          method="post"
+                          onsubmit="return confirm('Remove this card?')">
+                        <button type="submit"
+                                class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleCardForm() {
+        const collapse = document.getElementById('cardFormCollapse');
+        const icon = document.getElementById('toggleIcon');
+        collapse.classList.toggle('open');
+        icon.classList.toggle('rotated');
+    }
+
+    function formatAndExtract(input) {
+
+        let v = input.value.replace(/\D/g, '').substring(0, 16);
+        input.value = v.replace(/(.{4})/g, '$1 ').trim();
+
+        const digits = v.replace(/\s/g, '');
+        document.getElementById('lastFourInput').value =
+            digits.length >= 4 ? digits.slice(-4) : '';
+    }
+
+    function formatExpiry(input) {
+        let v = input.value.replace(/\D/g, '').substring(0, 4);
+        if (v.length >= 2) v = v.substring(0, 2) + '/' + v.substring(2);
+        input.value = v;
+    }
+
+    function validateExpiry(input) {
+        const errorEl = document.getElementById('expiryError');
+        const val = input.value;
+        if (val.length < 5) return;
+
+        const [month, year] = val.split('/');
+        if (!month || !year) return;
+
+        const expiry = new Date(2000 + parseInt(year), parseInt(month) - 1, 1);
+        const today  = new Date();
+        today.setDate(1);
+        today.setHours(0, 0, 0, 0);
+
+        if (expiry < today) {
+            errorEl.classList.remove('d-none');
+            input.classList.add('is-invalid');
+        } else {
+            errorEl.classList.add('d-none');
+            input.classList.remove('is-invalid');
+        }
+    }
+</script>
+</body>
+</html>

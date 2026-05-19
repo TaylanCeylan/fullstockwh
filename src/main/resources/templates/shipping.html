@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Shipping Address - Fullstockwh</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        body { background-color: #f8f9fa; }
+
+        .address-card {
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .address-card:hover   { border-color: #adb5bd; }
+        .address-card.selected {
+            border-color: #198754;
+            background-color: #f0fdf4;
+        }
+
+        .add-address-toggle {
+            cursor: pointer;
+            user-select: none;
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 12px 16px;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .add-address-toggle:hover  { border-color: #adb5bd; }
+        .add-address-toggle.active {
+            border-color: #212529;
+            background-color: #f8f9fa;
+        }
+
+        .toggle-icon { transition: transform 0.3s ease; }
+        .toggle-icon.rotated { transform: rotate(45deg); }
+
+        #newAddressCollapse {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.5s ease;
+        }
+        #newAddressCollapse.open { max-height: 1200px; }
+
+        #map { height: 280px; border-radius: 10px; border: 1.5px solid #dee2e6; z-index: 0; }
+        .map-hint { font-size: 0.78rem; color: #6c757d; margin-top: 5px; }
+        .coord-badge {
+            font-family: monospace; font-size: 0.78rem;
+            background: #f8f9fa; border: 1px solid #dee2e6;
+            padding: 3px 8px; border-radius: 6px; color: #495057;
+        }
+
+        .step-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 32px; }
+        .step { width: 32px; height: 32px; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                font-weight: 700; font-size: 0.85rem; }
+        .step.active   { background: #212529; color: #fff; }
+        .step.inactive { background: #dee2e6; color: #6c757d; }
+        .step-line { flex: 1; height: 2px; background: #dee2e6; }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="container mt-5 mb-5" style="max-width: 900px;">
+
+    <div class="step-indicator">
+        <div class="step inactive"><i class="bi bi-cart"></i></div>
+        <div class="step-line"></div>
+        <div class="step active">1</div>
+        <div class="step-line"></div>
+        <div class="step inactive">2</div>
+        <div class="step-line"></div>
+        <div class="step inactive"><i class="bi bi-check"></i></div>
+    </div>
+
+    <h2 class="fw-bold mb-4">Select Shipping Address</h2>
+
+    <div class="row g-4">
+
+        <div class="col-lg-7">
+            <form th:action="@{/checkout/shipping}"
+                  th:object="${shippingRequest}"
+                  method="post"
+                  id="shippingForm">
+
+                <div th:if="${!addresses.isEmpty()}" class="mb-3">
+
+                    <p class="text-muted small fw-semibold text-uppercase mb-2"
+                       style="letter-spacing:.08em;">Your Saved Addresses</p>
+
+                    <div th:each="addr : ${addresses}" class="mb-2">
+                        <div class="d-flex gap-3 align-items-start address-card p-3"
+                             th:id="'addr-' + ${addr.id}"
+                             onclick="selectSavedAddress(this)">
+                            <input type="radio"
+                                   name="addressId"
+                                   th:value="${addr.id}"
+                                   class="mt-1 flex-shrink-0">
+                            <div>
+                                <h6 class="fw-bold mb-1">
+                                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                                    <span th:text="${addr.addressTitle}"></span>
+                                </h6>
+                                <p class="mb-0 text-muted small" th:text="${addr.fullAddress}"></p>
+                                <p class="mb-0 text-muted small"
+                                   th:if="${addr.buildingDetails != null}"
+                                   th:text="${addr.buildingDetails}"></p>
+                                <p class="mb-0 text-muted small">
+                                    <span th:text="${addr.district}"></span>,
+                                    <span th:text="${addr.city}"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center my-3">
+                        <hr class="flex-grow-1 m-0">
+                        <span class="px-3 text-muted small">or</span>
+                        <hr class="flex-grow-1 m-0">
+                    </div>
+                </div>
+
+                <div class="add-address-toggle d-flex align-items-center gap-2"
+                     id="addAddressToggle"
+                     onclick="toggleNewAddressForm()">
+                    <i class="bi bi-plus-circle-fill text-primary toggle-icon"
+                       id="addAddressIcon"></i>
+                    <span class="fw-semibold small">Use a Different Address</span>
+                </div>
+
+                <div id="newAddressCollapse">
+                    <div class="pt-3">
+
+                        <div id="titleConflictError"
+                             class="alert alert-danger py-2 small mb-3"
+                             style="display:none;">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            You already have an address with this title. Please choose a different name.
+                        </div>
+
+                        <div id="newAddressError"
+                             class="alert alert-danger py-2 small mb-3"
+                             style="display:none;">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Please fill in at least City, District and Full Address.
+                        </div>
+
+                        <div class="card border-0 shadow-sm p-4">
+                            <div class="row g-3">
+
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold small">Address Title</label>
+                                    <input type="text" th:field="*{addressTitle}"
+                                           id="addressTitleInput"
+                                           class="form-control"
+                                           placeholder="Home, Work, Other...">
+                                    <div class="form-text text-muted">
+                                        Required only if saving for future use.
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">City</label>
+                                    <input type="text" id="cityInput" th:field="*{city}"
+                                           class="form-control" placeholder="Istanbul">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">District</label>
+                                    <input type="text" id="districtInput" th:field="*{district}"
+                                           class="form-control" placeholder="Kadıköy">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Neighborhood</label>
+                                    <input type="text" id="neighborhoodInput" th:field="*{neighborhood}"
+                                           class="form-control" placeholder="Caferağa">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Building Details</label>
+                                    <input type="text" th:field="*{buildingDetails}"
+                                           class="form-control" placeholder="Block A, Floor 2, No: 5">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold small">Full Address</label>
+                                    <textarea th:field="*{fullAddress}"
+                                              id="fullAddressInput"
+                                              class="form-control" rows="2"
+                                              placeholder="Street, building..."></textarea>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold small">
+                                        <i class="bi bi-map me-1 text-primary"></i>
+                                        Pick Location on Map
+                                    </label>
+                                    <div id="map"></div>
+                                    <p class="map-hint">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Click anywhere on the map — address fills automatically.
+                                    </p>
+                                    <div class="d-flex gap-2 mt-2"
+                                         id="coordDisplay" style="display:none;">
+                                        <span class="coord-badge">
+                                            Lat: <span id="latDisplay">—</span>
+                                        </span>
+                                        <span class="coord-badge">
+                                            Lng: <span id="lngDisplay">—</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <input type="hidden" th:field="*{latitude}"  id="latInput">
+                                <input type="hidden" th:field="*{longitude}" id="lngInput">
+
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox"
+                                               th:field="*{saveAddress}"
+                                               id="saveAddressCheck">
+                                        <label class="form-check-label small" for="saveAddressCheck">
+                                            Save this address for future use
+                                        </label>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="addressModeError"
+                     class="alert alert-danger py-2 small mt-3"
+                     style="display:none;">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Please select a saved address or fill in a new one.
+                </div>
+
+                <button type="submit" class="btn btn-dark w-100 py-3 fw-bold mt-3">
+                    Continue to Payment
+                    <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+                <a th:href="@{/cart}" class="btn btn-outline-secondary w-100 mt-2">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Cart
+                </a>
+
+            </form>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Order Summary</h5>
+
+                    <div th:each="item : ${cart.items}"
+                         class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <p class="fw-semibold mb-0 small" th:text="${item.productName}"></p>
+                            <p class="text-muted mb-0" style="font-size:0.75rem;">
+                                <span th:text="${item.color}"></span> /
+                                <span th:text="${item.size}"></span>
+                                · x<span th:text="${item.quantity}"></span>
+                            </p>
+                        </div>
+                        <span class="fw-semibold small"
+                              th:text="${'₺' + item.subtotal}"></span>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total</span>
+                        <span class="text-success"
+                              th:text="${'₺' + cart.totalAmount}">₺0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+
+    const existingTitles = /*[[${addresses.![addressTitle]}]]*/ [];
+
+    let activeMode = null;
+    let formOpen = false;
+    let mapInitialized = false;
+    let map, marker;
+
+    function selectSavedAddress(card) {
+        document.querySelectorAll('.address-card').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('input[name="addressId"]').forEach(r => r.checked = false);
+
+        card.classList.add('selected');
+        card.querySelector('input[type="radio"]').checked = true;
+
+        collapseNewAddressForm();
+
+        activeMode = 'saved';
+        hideErrors();
+    }
+
+    function toggleNewAddressForm() {
+        if (formOpen) {
+            collapseNewAddressForm();
+            if (activeMode === 'new') activeMode = null;
+        } else {
+            openNewAddressForm();
+        }
+    }
+
+    function openNewAddressForm() {
+
+        document.querySelectorAll('.address-card').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('input[name="addressId"]').forEach(r => r.checked = false);
+
+        document.getElementById('newAddressCollapse').classList.add('open');
+        document.getElementById('addAddressIcon').classList.add('rotated');
+        document.getElementById('addAddressToggle').classList.add('active');
+
+        if (!mapInitialized) {
+            initMap();
+            mapInitialized = true;
+        }
+
+        formOpen = true;
+        activeMode = 'new';
+        hideErrors();
+    }
+
+    function collapseNewAddressForm() {
+        document.getElementById('newAddressCollapse').classList.remove('open');
+        document.getElementById('addAddressIcon').classList.remove('rotated');
+        document.getElementById('addAddressToggle').classList.remove('active');
+        formOpen = false;
+    }
+
+    function hideErrors() {
+        document.getElementById('titleConflictError').style.display = 'none';
+        document.getElementById('newAddressError').style.display = 'none';
+        document.getElementById('addressModeError').style.display = 'none';
+    }
+
+    function initMap() {
+        map = L.map('map').setView([41.0082, 28.9784], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        map.on('click', function (e) {
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+
+            if (marker) marker.setLatLng(e.latlng);
+            else marker = L.marker(e.latlng).addTo(map);
+
+            document.getElementById('latInput').value = lat;
+            document.getElementById('lngInput').value = lng;
+            document.getElementById('latDisplay').textContent = lat;
+            document.getElementById('lngDisplay').textContent = lng;
+            document.getElementById('coordDisplay').style.display = 'flex';
+
+            document.getElementById('cityInput').value = 'Loading...';
+            document.getElementById('districtInput').value = 'Loading...';
+            document.getElementById('neighborhoodInput').value = 'Loading...';
+            document.getElementById('fullAddressInput').value = 'Loading...';
+
+            fetch('https://nominatim.openstreetmap.org/reverse?lat='
+                  + lat + '&lon=' + lng + '&format=json')
+                .then(r => r.json())
+                .then(data => {
+                    const a = data.address || {};
+                    document.getElementById('cityInput').value =
+                        a.province || a.state || a.city || '';
+                    document.getElementById('districtInput').value =
+                        a.city_district || a.town || a.county || '';
+                    document.getElementById('neighborhoodInput').value =
+                        a.suburb || a.neighbourhood || a.quarter || '';
+                    document.getElementById('fullAddressInput').value =
+                        data.display_name || '';
+                    marker.bindPopup(data.display_name || lat + ', ' + lng).openPopup();
+                })
+                .catch(() => {
+                    document.getElementById('cityInput').value = '';
+                    document.getElementById('districtInput').value = '';
+                    document.getElementById('neighborhoodInput').value = '';
+                    document.getElementById('fullAddressInput').value = '';
+                    marker.bindPopup(lat + ', ' + lng).openPopup();
+                });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const hasSaved = document.querySelectorAll('.address-card').length > 0;
+        if (!hasSaved) {
+            openNewAddressForm();
+        }
+
+        document.getElementById('shippingForm').addEventListener('submit', function (e) {
+
+            if (activeMode === null) {
+                const checked = document.querySelector('input[name="addressId"]:checked');
+                if (checked) {
+                    selectSavedAddress(checked.closest('.address-card'));
+                }
+            }
+
+            if (activeMode === 'saved') return;
+
+            if (activeMode === 'new') {
+                const city = document.getElementById('cityInput').value.trim();
+                const district = document.getElementById('districtInput').value.trim();
+                const full = document.getElementById('fullAddressInput').value.trim();
+
+                if (!city || !district || !full) {
+                    e.preventDefault();
+                    document.getElementById('newAddressError').style.display = 'block';
+                    document.getElementById('newAddressCollapse')
+                            .scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+
+                const wantToSave = document.getElementById('saveAddressCheck').checked;
+                if (wantToSave) {
+                    const title = document.getElementById('addressTitleInput').value.trim().toLowerCase();
+                    const conflict = existingTitles.some(t => t.toLowerCase() === title);
+                    if (conflict) {
+                        e.preventDefault();
+                        document.getElementById('titleConflictError').style.display = 'block';
+                        document.getElementById('addressTitleInput').focus();
+                        return;
+                    }
+                }
+                return;
+            }
+
+            e.preventDefault();
+            document.getElementById('addressModeError').style.display = 'block';
+        });
+    });
+</script>
+</body>
+</html>

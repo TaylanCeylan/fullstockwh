@@ -1,6 +1,7 @@
 package com.fullstockwh.user;
 
 import com.fullstockwh.auth.enums.Role;
+import com.fullstockwh.user.payment_card.PaymentCard;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +10,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.fullstockwh.user.address.Address;
+import java.util.ArrayList;
 
 import java.util.Collection;
 import java.util.Date;
@@ -27,10 +30,10 @@ public class UserEntity implements UserDetails
     private Long id;
 
     @Column
-    private String firstName;
+    private String firstName= "";
 
     @Column
-    private String lastName;
+    private String lastName= "";
 
     @Column
     private Date birthDate;
@@ -69,4 +72,10 @@ public class UserEntity implements UserDetails
     {
         return enabled;
     }
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Address> addresses = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PaymentCard> paymentCards = new ArrayList<>();
 }

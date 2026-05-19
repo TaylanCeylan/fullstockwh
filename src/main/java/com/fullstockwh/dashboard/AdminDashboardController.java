@@ -5,6 +5,8 @@ import com.fullstockwh.category.dto.CategoryCreateRequest;
 import com.fullstockwh.category.dto.CategoryResponse;
 import com.fullstockwh.category.dto.CategoryUpdateRequest;
 import com.fullstockwh.category.enums.TargetGender;
+import com.fullstockwh.order.Order;
+import com.fullstockwh.order.OrderRepository;
 import com.fullstockwh.product.Product;
 import com.fullstockwh.category.Category;
 import com.fullstockwh.category.CategoryRepository;
@@ -20,6 +22,7 @@ import com.fullstockwh.product.ProductService;
 import com.fullstockwh.product.dto.ProductCreateRequest;
 import com.fullstockwh.product.dto.ProductResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +42,7 @@ public class AdminDashboardController
     private final CategoryRepository categoryRepository;
     private final VariantService variantService;
     private final VariantRepository variantRepository;
+    private final OrderRepository orderRepository;
 
     @GetMapping("/dashboard")
     public String AdminDashboard(Model model) {
@@ -62,6 +66,11 @@ public class AdminDashboardController
         model.addAttribute("totalCategories", categories.size());
         model.addAttribute("categoryStats", categoryStats);
 
+        List<Order> recentOrders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 10));
+        model.addAttribute("recentOrders", recentOrders);
+        List<ProductVariant> lowStockVariants = variantRepository.findByStockQuantityLessThan(5);
+        model.addAttribute("lowStockVariants", lowStockVariants);
+        model.addAttribute("lowStockCount", lowStockVariants.size());
         model.addAttribute("activePage", "dashboard");
         return "admin/dashboard";
     }
@@ -200,6 +209,29 @@ public class AdminDashboardController
     {
         productService.deleteProduct(id);
         return "redirect:/admin/products";
+    }
+
+    @GetMapping("/orders")
+    public String adminOrders(
+            @RequestParam(required = false, defaultValue = "") String status,
+            Model model)
+    {
+        List<Order> allOrders;
+        if (status != null && !status.isBlank()) {
+            com.fullstockwh.order.enums.OrderStatus orderStatus =
+                    com.fullstockwh.order.enums.OrderStatus.valueOf(status);
+            allOrders = orderRepository.findAll().stream()
+                    .filter(o -> o.getStatus() == orderStatus)
+                    .sorted((a, b) -> b.getOrderDate().compareTo(a.getOrderDate()))
+                    .collect(java.util.stream.Collectors.toList());
+        } else {
+            allOrders = orderRepository.findRecentOrdersWithDetails(
+                    PageRequest.of(0, 200));
+        }
+        model.addAttribute("allOrders", allOrders);
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("activePage", "orders");
+        return "admin/orders";
     }
 
     @GetMapping("/products/{id}/variants")
