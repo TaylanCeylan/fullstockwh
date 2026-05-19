@@ -68,7 +68,9 @@ public class AdminDashboardController
 
         List<Order> recentOrders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 10));
         model.addAttribute("recentOrders", recentOrders);
-
+        List<ProductVariant> lowStockVariants = variantRepository.findByStockQuantityLessThan(5);
+        model.addAttribute("lowStockVariants", lowStockVariants);
+        model.addAttribute("lowStockCount", lowStockVariants.size());
         model.addAttribute("activePage", "dashboard");
         return "admin/dashboard";
     }

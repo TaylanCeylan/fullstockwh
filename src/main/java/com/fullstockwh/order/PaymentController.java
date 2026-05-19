@@ -161,8 +161,13 @@ public class PaymentController
     }
 
     @GetMapping("/checkout/confirmation")
-    public String confirmationPage()
-    {
-        return "order-confirmation";
+    public String confirmationPage(Model model,
+                                   @ModelAttribute("orderId")    Long orderId,
+                                   @ModelAttribute("orderTotal") Object orderTotal)
+        {
+            model.addAttribute("orderId",    orderId);
+            model.addAttribute("orderTotal", orderTotal);
+
+            return "order-confirmation";
     }
 }

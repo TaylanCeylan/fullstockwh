@@ -1,6 +1,7 @@
 package com.fullstockwh.order;
 
 import com.fullstockwh.order.enums.OrderStatus;
+import com.fullstockwh.shipment.Shipment;
 import com.fullstockwh.user.address.Address;
 import com.fullstockwh.order.order_item.OrderItem;
 import com.fullstockwh.user.UserEntity;
@@ -46,6 +47,9 @@ public class Order
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
+
+    @OneToOne(mappedBy = "order", fetch = FetchType.LAZY)
+    private Shipment shipment;
 
     public int getTotalQuantity() {
         if (items == null) return 0;

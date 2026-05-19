@@ -30,10 +30,10 @@ public class UserEntity implements UserDetails
     private Long id;
 
     @Column
-    private String firstName;
+    private String firstName= "";
 
     @Column
-    private String lastName;
+    private String lastName= "";
 
     @Column
     private Date birthDate;
