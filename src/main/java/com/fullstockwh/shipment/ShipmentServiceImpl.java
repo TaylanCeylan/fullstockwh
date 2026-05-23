@@ -163,6 +163,8 @@ class ShipmentServiceImpl implements ShipmentService
                 .orderStatus(order.getStatus())
                 .shippingFee(shipment.getShippingFee())
                 .distanceKm(shipment.getDistanceKm())
+                .destinationLat(shipment.getDestinationLat())
+                .destinationLon(shipment.getDestinationLon())
                 .destinationCity(address != null ? address.getCity() : "-")
                 .destinationDistrict(address != null ? address.getDistrict() : "-")
                 .orderedAt(order.getOrderDate())
