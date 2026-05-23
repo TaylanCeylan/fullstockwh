@@ -80,9 +80,49 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script th:inline="javascript">
 
+    const warehouseLat = 39.9334;
+    const warehouseLon = 32.8597;
+    const destLat = [[${destLat != null ? destLat : 39.9334}]];
+    const destLon = [[${destLon != null ? destLon : 32.8597}]];
+    const destCity = '[[${destCity ?: ""}]]';
+    const destDistrict = '[[${destDistrict ?: ""}]]';
+    const hasDestination = destLat !== warehouseLat || destLon !== warehouseLon;
+
+    const map = L.map('shipmentMap').setView(
+     [(warehouseLat + destLat) / 2, (warehouseLon + destLon) / 2], 6
+ );
+
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+     attribution: '© OpenStreetMap contributors'
+ }).addTo(map);
+
+ const blueIcon = L.divIcon({
+     html: '<div style="background:#0d6efd;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.3)"></div>',
+     iconSize: [14, 14], iconAnchor: [7, 7]
+ });
+ L.marker([warehouseLat, warehouseLon], { icon: blueIcon })
+  .addTo(map)
+  .bindPopup('Fullstockwh Central Warehouse - Ankara');
+
+ if (hasDestination) {
+     const redIcon = L.divIcon({
+         html: '<div style="background:#dc3545;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.3)"></div>',
+         iconSize: [14, 14], iconAnchor: [7, 7]
+     });
+     L.marker([destLat, destLon], { icon: redIcon })
+      .addTo(map)
+      .bindPopup(destDistrict + ', ' + destCity);
+
+     L.polyline([[warehouseLat, warehouseLon], [destLat, destLon]], {
+         color: '#0d6efd', weight: 2, dashArray: '6,8'
+     }).addTo(map);
+
+     map.fitBounds([[warehouseLat, warehouseLon], [destLat, destLon]], { padding: [40, 40] });
+ }
 </script>
 </body>
 </html>
