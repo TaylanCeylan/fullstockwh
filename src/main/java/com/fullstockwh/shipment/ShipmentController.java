@@ -20,6 +20,7 @@ public class ShipmentController
 {
     private final ShipmentService shipmentService;
     private final ShipmentStatsService shipmentStatsService;
+    private final com.fullstockwh.order.OrderRepository orderRepository;
 
     @GetMapping("/admin/orders/{orderId}/ship")
     @PreAuthorize("hasRole('ADMIN')")
@@ -28,6 +29,17 @@ public class ShipmentController
         model.addAttribute("orderId", orderId);
         model.addAttribute("request", new ShipOrderRequest());
         model.addAttribute("activePage", "orders");
+
+        orderRepository.findById(orderId).ifPresent(order -> {
+            com.fullstockwh.user.address.Address address = order.getShippingAddress();
+            if (address != null) {
+                model.addAttribute("destLat", address.getLatitude());
+                model.addAttribute("destLon", address.getLongitude());
+                model.addAttribute("destCity", address.getCity());
+                model.addAttribute("destDistrict", address.getDistrict());
+            }
+        });
+
         return "admin/ship-order";
     }
 
