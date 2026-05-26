@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="'Images - ' + ${product.name}">Product Images</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"/>
+  <style>
+    body { background-color: #f4f7f6; }
+    .sidebar { width: 280px; height: 100vh; position: fixed; left: 0; top: 0;
+               background-color: #343a40; z-index: 1000; }
+    .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+    .product-img-card {
+        position: relative; border-radius: 10px; overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    .product-img-card img {
+        width: 100%; height: 200px; object-fit: cover;
+    }
+    .product-img-card .delete-btn {
+        position: absolute; top: 8px; right: 8px;
+    }
+    .img-placeholder-box {
+        width: 100%; height: 200px; background: #e9ecef;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 10px; color: #adb5bd; font-size: 3rem;
+    }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{admin/sidebar :: adminSidebar}"></div>
+
+<div class="main-content">
+  <div class="container-fluid" style="max-width: 1000px;">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a th:href="@{/admin/products}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Products
+      </a>
+      <div>
+        <h4 class="mb-0 fw-bold" th:text="'Images: ' + ${product.name}">Images</h4>
+        <span class="text-muted small"
+              th:text="'Price: ₺' + ${product.price} + '  ·  ' + ${product.categoryName}">
+                </span>
+      </div>
+    </div>
+
+    <div th:if="${imageError}" class="alert alert-danger" th:text="${imageError}"></div>
+
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary text-white fw-semibold">
+        Add New Photo
+      </div>
+      <div class="card-body">
+        <form th:action="@{'/admin/products/' + ${product.id} + '/images/add'}"
+              method="post"
+              enctype="multipart/form-data"
+              class="d-flex align-items-end gap-3">
+          <div class="flex-grow-1">
+            <label class="form-label fw-bold small text-muted">SELECT PHOTO</label>
+            <input type="file" name="imageFile" class="form-control"
+                   accept="image/*" required/>
+            <div class="form-text">JPG, PNG, WEBP — max 5MB</div>
+          </div>
+          <button type="submit" class="btn btn-success px-4">
+            <i class="bi bi-upload me-1"></i> Upload
+          </button>
+        </form>
+      </div>
+    </div>
+
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Product Photos</span>
+        <span class="badge bg-primary px-3"
+              th:text="${images.size()} + ' photos'">0 photos</span>
+      </div>
+      <div class="card-body">
+
+        <div th:if="${images.isEmpty()}" class="text-center text-muted py-4">
+          <i class="bi bi-images display-4 d-block mb-2"></i>
+          No photos yet. Upload the first one above.
+        </div>
+
+        <div th:if="${!images.isEmpty()}" class="row g-3">
+          <div th:each="img, iter : ${images}" class="col-md-3 col-sm-4 col-6">
+            <div class="product-img-card">
+              <img th:src="${img.imageUrl}"
+                   th:alt="'Photo ' + ${iter.index + 1}"/>
+
+              <span th:if="${iter.index == 0}"
+                    class="badge bg-success position-absolute"
+                    style="top:8px; left:8px;">Main</span>
+
+              <form th:action="@{'/admin/products/' + ${product.id} + '/images/set-main/' + ${img.id}}"
+                    method="post"
+                    class="position-absolute"
+                    style="bottom:8px; left:8px;">
+                <button type="submit" class="btn btn-sm btn-dark">
+                  <i class="bi bi-star"></i>
+                </button>
+              </form>
+              <form th:action="@{'/admin/products/' + ${product.id} + '/images/delete/' + ${img.id}}"
+                    method="post"
+                    class="delete-btn"
+                    onsubmit="return confirm('Delete this photo?')">
+                <button type="submit" class="btn btn-danger btn-sm">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
