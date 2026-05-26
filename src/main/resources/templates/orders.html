@@ -54,6 +54,16 @@
                    class="btn btn-sm btn-outline-dark">
                     <i class="bi bi-geo-alt me-1"></i>Track Order
                 </a>
+
+                <form th:if="${order.status.name() == 'SUCCESS' and order.orderDate.isAfter(#temporals.createNow().minusMinutes(30))}"
+                      th:action="@{/orders/{id}/cancel(id=${order.id})}"
+                      method="post" class="d-inline"
+                      onsubmit="return confirm('Are you sure you want to cancel this order?')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-x-circle me-1"></i>Cancel
+                    </button>
+                </form>
+
             </div>
         </div>
 

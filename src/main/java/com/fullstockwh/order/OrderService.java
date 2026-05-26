@@ -10,4 +10,6 @@ public interface OrderService
 {
     OrderResponse placeOrder(UserEntity user, OrderCreateRequest request);
     List<OrderResponse> getOrdersByUser (UserEntity user);
+    void cancelOrder(Long orderId, UserEntity user);
+    void adminCancelOrder(Long orderId);
 }
