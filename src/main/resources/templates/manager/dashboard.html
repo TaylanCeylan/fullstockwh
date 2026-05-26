@@ -42,7 +42,7 @@
                 <div class="card shadow-sm p-4">
                     <div class="text-muted small mb-1">Low Stock Variants</div>
                     <div class="fs-2 fw-bold" th:text="${lowStockCount}">0</div>
-                    <a th:href="@{/manager/orders}" class="btn btn-sm btn-warning mt-3">View</a>
+                    <a th:href="@{/manager/stock(lowStockOnly=true)}" class="btn btn-sm btn-warning mt-3">View</a>
                 </div>
             </div>
         </div>
@@ -58,7 +58,6 @@
                         <th>Total</th>
                         <th>Status</th>
                         <th>Date</th>
-                        <th>Actions</th>
                     </tr>
                     </thead>
                     <tbody>

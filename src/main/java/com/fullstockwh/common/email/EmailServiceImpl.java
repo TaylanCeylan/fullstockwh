@@ -26,6 +26,7 @@ class EmailServiceImpl implements EmailService
 
         mailSender.send(message);
     }
+
     @Override
     public void sendShippingConfirmationEmail(String email,
                                               String trackingNumber,
@@ -46,20 +47,6 @@ class EmailServiceImpl implements EmailService
                         "Tracking Number : " + trackingNumber + "\n" +
                         "Estimated Date  : " + deliveryDate   + "\n\n" +
                         "You can track your shipment by logging into your account.\n\n" +
-                        "Best regards,\nFullstockwh Team"
-        );
-        mailSender.send(message);
-    }
-
-    @Override
-    public void sendOrderCancellationEmail(String email, Long orderId) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Order Cancelled - Fullstockwh");
-        message.setText(
-                "Hello,\n\n" +
-                        "Your order #" + orderId + " has been successfully cancelled.\n" +
-                        "Stock has been restored.\n\n" +
                         "Best regards,\nFullstockwh Team"
         );
         mailSender.send(message);
