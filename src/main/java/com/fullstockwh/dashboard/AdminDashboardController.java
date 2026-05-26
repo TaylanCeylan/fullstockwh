@@ -21,6 +21,10 @@ import com.fullstockwh.product.product_variant.enums.Size;
 import com.fullstockwh.product.ProductService;
 import com.fullstockwh.product.dto.ProductCreateRequest;
 import com.fullstockwh.product.dto.ProductResponse;
+import com.fullstockwh.common.FileStorageService;
+import com.fullstockwh.product.ProductImage;
+import com.fullstockwh.product.ProductImageRepository;
+import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -43,6 +47,8 @@ public class AdminDashboardController
     private final VariantService variantService;
     private final VariantRepository variantRepository;
     private final OrderRepository orderRepository;
+    private final FileStorageService fileStorageService;
+    private final ProductImageRepository productImageRepository;
 
     @GetMapping("/dashboard")
     public String AdminDashboard(Model model) {
@@ -301,5 +307,91 @@ public class AdminDashboardController
                                 @RequestParam Long productId) {
         variantService.updateVariant(request, id);
         return "redirect:/admin/products/" + productId + "/variants";
+    }
+
+
+    @GetMapping("/products/{id}/images")
+    public String manageProductImages(@PathVariable Long id, Model model)
+    {
+        ProductResponse product = productService.getProductById(id);
+        List<ProductImage> images = productImageRepository
+                .findByProductIdOrderByDisplayOrderAsc(id);
+
+        model.addAttribute("product", product);
+        model.addAttribute("images", images);
+        model.addAttribute("activePage", "products");
+        return "admin/product-images";
+    }
+
+
+    @PostMapping("/products/{id}/images/add")
+    public String addProductImage(@PathVariable Long id,
+                                  @RequestParam("imageFile") MultipartFile imageFile,
+                                  RedirectAttributes redirectAttributes)
+    {
+        if (imageFile == null || imageFile.isEmpty()) {
+            redirectAttributes.addFlashAttribute("imageError", "Please select a file.");
+            return "redirect:/admin/products/" + id + "/images";
+        }
+        try {
+            String imageUrl = fileStorageService.store(imageFile);
+            long count = productImageRepository
+                    .findByProductIdOrderByDisplayOrderAsc(id).size();
+
+            Product product = new Product();
+            product.setId(id);
+
+            ProductImage image = ProductImage.builder()
+                    .product(product)
+                    .imageUrl(imageUrl)
+                    .displayOrder((int) count)
+                    .build();
+
+            productImageRepository.save(image);
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("imageError", e.getMessage());
+        }
+        return "redirect:/admin/products/" + id + "/images";
+    }
+
+    @PostMapping("/products/{id}/images/delete/{imageId}")
+    public String deleteProductImage(@PathVariable Long id,
+                                     @PathVariable Long imageId)
+    {
+        productImageRepository.findById(imageId).ifPresent(image -> {
+            fileStorageService.delete(image.getImageUrl());
+            productImageRepository.delete(image);
+        });
+        return "redirect:/admin/products/" + id + "/images";
+    }
+
+    @PostMapping("/products/{id}/images/set-main/{imageId}")
+    public String setMainImage(@PathVariable Long id,
+                               @PathVariable Long imageId)
+    {
+        List<ProductImage> images = productImageRepository
+                .findByProductIdOrderByDisplayOrderAsc(id);
+
+        int order = 0;
+
+        ProductImage selected = null;
+        for (ProductImage img : images) {
+            if (img.getId().equals(imageId)) {
+                selected = img;
+                break;
+            }
+        }
+        if (selected != null) {
+            selected.setDisplayOrder(0);
+            productImageRepository.save(selected);
+            order = 1;
+            for (ProductImage img : images) {
+                if (!img.getId().equals(imageId)) {
+                    img.setDisplayOrder(order++);
+                    productImageRepository.save(img);
+                }
+            }
+        }
+        return "redirect:/admin/products/" + id + "/images";
     }
 }

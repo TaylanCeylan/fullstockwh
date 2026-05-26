@@ -96,12 +96,35 @@
 
 
     <div class="col-md-5">
-      <div class="img-placeholder shadow-sm">
-        <div class="text-center">
-          <i class="bi bi-image display-1"></i>
-          <p class="mt-2 small">No image available</p>
+
+      <div id="productImageWrapper">
+        <img th:if="${product.firstImageUrl != null}"
+             th:src="${product.firstImageUrl}"
+             id="productMainImage"
+             th:alt="${product.name}"
+             style="width:100%; height:420px; object-fit:cover;
+                    border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.08);"/>
+        <div th:if="${product.firstImageUrl == null}"
+             class="img-placeholder shadow-sm">
+          <div class="text-center">
+            <i class="bi bi-image display-1"></i>
+            <p class="mt-2 small">No image available</p>
+          </div>
         </div>
       </div>
+
+
+      <div th:if="${product.imageUrls != null and product.imageUrls.size() > 1}"
+           class="d-flex gap-2 mt-2 flex-wrap">
+        <img th:each="imgUrl, iter : ${product.imageUrls}"
+             th:src="${imgUrl}"
+             th:attr="data-src=${imgUrl}"
+             th:alt="'Photo ' + ${iter.index + 1}"
+             class="thumb-img"
+             onclick="switchImage(this.dataset.src)"
+             th:style="${iter.index == 0} ? 'width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid #212529;' : 'width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid #dee2e6;'"/>
+      </div>
+
     </div>
 
 
@@ -140,15 +163,11 @@
           th:text="${product.price + '₺'}">$0.00</h3>
       <hr>
 
-
-
       <div th:if="${product.variants != null and !product.variants.isEmpty()}">
-
 
         <script th:inline="javascript">
           const variants = /*[[${product.variants}]]*/ [];
         </script>
-
 
         <div class="mb-4" th:if="${not #lists.isEmpty(uniqueColors)}">
           <p class="fw-semibold mb-2">
@@ -251,7 +270,7 @@
 
       <div th:if="${reviewError}" class="alert alert-danger py-2" th:text="${reviewError}"></div>
 
-      <form th:action="@{'/product/' + ${product.id} + '/reviews'}" method="post">
+      <form th:action="@{/product/{id}/reviews(id=${product.id})}" method="post">
         <div class="mb-3">
           <label class="form-label fw-semibold">Rating</label>
           <div class="star-rating d-flex gap-1">
@@ -369,6 +388,15 @@
     document.getElementById('qtyMinus').disabled = next <= 1;
     document.getElementById('qtyPlus').disabled  = next >= qtyMax;
   }
+
+  function switchImage(src) {
+    const img = document.getElementById('productMainImage');
+    if (img) img.src = src;
+
+    document.querySelectorAll('.thumb-img').forEach(t => {
+        t.style.borderColor = t.getAttribute('data-src') === src ? '#212529' : '#dee2e6';
+    });
+}
 
   function selectColor(el) {
     document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));

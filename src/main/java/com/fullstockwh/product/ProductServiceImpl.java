@@ -8,6 +8,7 @@ import com.fullstockwh.product.dto.ProductResponse;
 import com.fullstockwh.category.Category;
 import com.fullstockwh.category.CategoryRepository;
 import com.fullstockwh.product.product_variant.VariantService;
+import com.fullstockwh.product.ProductImage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ class ProductServiceImpl implements ProductService
     private final CategoryRepository categoryRepository;
     private final VariantService variantService;
     private final VariantRepository variantRepository;
+    private final ProductImageRepository productImageRepository;
 
     @Override
     @Transactional
@@ -221,6 +223,12 @@ class ProductServiceImpl implements ProductService
                         product.getVariants().stream()
                                 .map(variantService::mapToVariantResponse)
                                 .collect(Collectors.toList()))
+
+                .imageUrls(productImageRepository
+                        .findByProductIdOrderByDisplayOrderAsc(product.getId())
+                        .stream()
+                        .map(ProductImage::getImageUrl)
+                        .collect(Collectors.toList()))
 
                 .build();
     }

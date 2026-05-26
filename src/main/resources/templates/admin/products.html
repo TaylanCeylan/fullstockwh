@@ -266,6 +266,9 @@
                                 <div class="d-flex justify-content-center gap-1">
                                     <a th:href="@{/admin/products/{id}/variants(id=${p.id})}"
                                        class="btn btn-sm btn-outline-primary fw-semibold">Variants</a>
+                                    <a th:href="@{'/admin/products/' + ${p.id} + '/images'}"
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-images"></i> Images</a>
                                     <a th:href="@{/admin/products/edit/{id}(id=${p.id})}"
                                        class="btn btn-sm btn-outline-secondary border fw-semibold">Edit</a>
                                     <form th:action="@{/admin/products/delete/{id}(id=${p.id})}"
