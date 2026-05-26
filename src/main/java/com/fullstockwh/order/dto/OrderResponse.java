@@ -17,5 +17,6 @@ public class OrderResponse
     private OrderStatus status;
     private String shippingAddress;
     private LocalDateTime orderDate;
+    private LocalDateTime cancelledAt;
     private List<OrderItemResponse> items;
 }

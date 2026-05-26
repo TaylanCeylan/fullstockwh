@@ -3,6 +3,7 @@ package com.fullstockwh.order;
 import com.fullstockwh.cart.Cart;
 import com.fullstockwh.cart.CartRepository;
 import com.fullstockwh.cart.cart_item.CartItem;
+import com.fullstockwh.common.email.EmailService;
 import com.fullstockwh.order.dto.OrderCreateRequest;
 import com.fullstockwh.order.dto.OrderItemResponse;
 import com.fullstockwh.order.dto.OrderResponse;
@@ -13,6 +14,9 @@ import com.fullstockwh.product.product_variant.VariantRepository;
 import com.fullstockwh.user.UserEntity;
 import com.fullstockwh.user.address.Address;
 import com.fullstockwh.user.address.AddressRepository;
+import com.fullstockwh.common.email.EmailService;
+import com.fullstockwh.order.order_item.OrderItem;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +34,7 @@ public class OrderServiceImpl implements OrderService
     private final CartRepository cartRepository;
     private final VariantRepository variantRepository;
     private final AddressRepository addressRepository;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -98,6 +103,51 @@ public class OrderServiceImpl implements OrderService
                 .collect(Collectors.toList());
     }
 
+
+    @Override
+    @Transactional
+    public void cancelOrder(Long orderId, UserEntity user) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (!order.getUser().getId().equals(user.getId()))
+            throw new RuntimeException("Unauthorized");
+
+        if (order.getStatus() != OrderStatus.SUCCESS)
+            throw new RuntimeException("Only confirmed orders can be cancelled");
+
+        if (order.getOrderDate().isBefore(LocalDateTime.now().minusMinutes(30)))
+            throw new RuntimeException("Cancellation period has expired (30 minutes)");
+
+        restoreStockAndCancel(order);
+    }
+
+    @Override
+    @Transactional
+    public void adminCancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (order.getStatus() == OrderStatus.DELIVERED ||
+                order.getStatus() == OrderStatus.CANCELLED)
+            throw new RuntimeException("This order cannot be cancelled");
+
+        restoreStockAndCancel(order);
+    }
+
+    private void restoreStockAndCancel(Order order) {
+        for (OrderItem item : order.getItems()) {
+            ProductVariant variant = item.getProductVariant();
+            variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
+            variantRepository.save(variant);
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelledAt(LocalDateTime.now());
+        orderRepository.save(order);
+        emailService.sendOrderCancellationEmail(
+                order.getUser().getUsername(), order.getId());
+    }
+
     private OrderResponse mapToResponse(Order order) {
         List<OrderItemResponse> itemResponses = order.getItems().stream()
                 .map(item -> OrderItemResponse.builder()
@@ -126,6 +176,7 @@ public class OrderServiceImpl implements OrderService
                 .orderDate (order.getOrderDate())
                 .shippingAddress(shippingAddr)
                 .items (itemResponses)
+                .cancelledAt (order.getCancelledAt())
                 .build();
     }
 }

@@ -7,6 +7,7 @@ import com.fullstockwh.category.dto.CategoryUpdateRequest;
 import com.fullstockwh.category.enums.TargetGender;
 import com.fullstockwh.order.Order;
 import com.fullstockwh.order.OrderRepository;
+import com.fullstockwh.order.OrderService;
 import com.fullstockwh.product.Product;
 import com.fullstockwh.category.Category;
 import com.fullstockwh.category.CategoryRepository;
@@ -43,6 +44,7 @@ public class AdminDashboardController
     private final VariantService variantService;
     private final VariantRepository variantRepository;
     private final OrderRepository orderRepository;
+    private final OrderService orderService;
 
     @GetMapping("/dashboard")
     public String AdminDashboard(Model model) {
@@ -301,5 +303,18 @@ public class AdminDashboardController
                                 @RequestParam Long productId) {
         variantService.updateVariant(request, id);
         return "redirect:/admin/products/" + productId + "/variants";
+    }
+
+    @PostMapping("/orders/{id}/cancel")
+    public String adminCancelOrder(@PathVariable Long id,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            orderService.adminCancelOrder(id);
+            redirectAttributes.addFlashAttribute("success",
+                    "Order #" + id + " cancelled.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/orders";
     }
 }

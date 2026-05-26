@@ -50,4 +50,18 @@ class EmailServiceImpl implements EmailService
         );
         mailSender.send(message);
     }
+
+    @Override
+    public void sendOrderCancellationEmail(String email, Long orderId) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("Order Cancelled - Fullstockwh");
+        message.setText(
+                "Hello,\n\n" +
+                        "Your order #" + orderId + " has been successfully cancelled.\n" +
+                        "Stock has been restored.\n\n" +
+                        "Best regards,\nFullstockwh Team"
+        );
+        mailSender.send(message);
+    }
 }
