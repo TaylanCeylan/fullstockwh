@@ -9,4 +9,5 @@ public interface EmailService
                                        String trackingNumber,
                                        String carrierName,
                                        LocalDateTime estimatedDelivery);
+    void sendOrderCancellationEmail(String email, Long orderId);
 }

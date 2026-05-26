@@ -43,6 +43,7 @@ public class SecurityConfig
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/user/**").hasAnyRole("ADMIN", "MANAGER", "USER")
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/product/**").permitAll()
                         .requestMatchers("/cart/**").authenticated()
                         .requestMatchers("/checkout/**").authenticated()
