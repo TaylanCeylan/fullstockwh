@@ -145,6 +145,28 @@ public class OrderServiceImpl implements OrderService
                 order.getUser().getUsername(), order.getId());
     }
 
+    @Override
+    @Transactional
+    public void shipOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        if (order.getStatus() != OrderStatus.SUCCESS)
+            throw new RuntimeException("Only confirmed orders can be shipped");
+        order.setStatus(OrderStatus.SHIPPED);
+        orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void deliverOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        if (order.getStatus() != OrderStatus.SHIPPED)
+            throw new RuntimeException("Only shipped orders can be marked as delivered");
+        order.setStatus(OrderStatus.DELIVERED);
+        orderRepository.save(order);
+    }
+
     private OrderResponse mapToResponse(Order order) {
         List<OrderItemResponse> itemResponses = order.getItems().stream()
                 .map(item -> OrderItemResponse.builder()
