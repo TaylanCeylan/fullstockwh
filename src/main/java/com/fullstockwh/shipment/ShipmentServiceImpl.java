@@ -223,6 +223,12 @@ class ShipmentServiceImpl implements ShipmentService
                 .carbonFootprintKg(s.getCarbonFootprintKg())
                 .build();
     }
+
+    @Override
+    public List<Shipment> getAllShipments() {
+        return shipmentRepository.findAll();
+    }
+
     private double calculateCarbonFootprint(double distanceKm, List<OrderItem> items)
     {
         double totalWeightKg = items.stream()

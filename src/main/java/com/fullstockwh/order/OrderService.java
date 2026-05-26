@@ -12,4 +12,6 @@ public interface OrderService
     List<OrderResponse> getOrdersByUser (UserEntity user);
     void cancelOrder(Long orderId, UserEntity user);
     void adminCancelOrder(Long orderId);
+    void shipOrder(Long orderId);
+    void deliverOrder(Long orderId);
 }

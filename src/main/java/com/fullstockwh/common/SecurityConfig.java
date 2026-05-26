@@ -41,6 +41,7 @@ public class SecurityConfig
                         .requestMatchers("/api/products/**", "/api/categories/**", "/api/reviews/**").authenticated()
                         .requestMatchers("/user/**").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/user/**").hasAnyRole("ADMIN", "MANAGER", "USER")
                         .requestMatchers("/uploads/**").permitAll()
