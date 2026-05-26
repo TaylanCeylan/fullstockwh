@@ -27,6 +27,12 @@
         Shipments
       </a>
     </li>
+    <li>
+      <a th:href="@{/manager/stock}" class="nav-link text-white"
+         th:classappend="${activePage == 'stock' ? 'active' : ''}">
+        Stock Requests
+      </a>
+    </li>
   </ul>
 
   <hr>

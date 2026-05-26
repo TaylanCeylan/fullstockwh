@@ -13,7 +13,6 @@ import com.fullstockwh.product.product_variant.VariantRepository;
 import com.fullstockwh.user.UserEntity;
 import com.fullstockwh.user.address.Address;
 import com.fullstockwh.user.address.AddressRepository;
-import com.fullstockwh.common.email.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +31,6 @@ public class OrderServiceImpl implements OrderService
     private final CartRepository cartRepository;
     private final VariantRepository variantRepository;
     private final AddressRepository addressRepository;
-    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -141,8 +139,6 @@ public class OrderServiceImpl implements OrderService
         order.setStatus(OrderStatus.CANCELLED);
         order.setCancelledAt(LocalDateTime.now());
         orderRepository.save(order);
-        emailService.sendOrderCancellationEmail(
-                order.getUser().getUsername(), order.getId());
     }
 
     @Override

@@ -11,6 +11,12 @@ import com.fullstockwh.shipment.ShipmentRepository;
 import com.fullstockwh.shipment.enums.ShipmentStatus;
 import com.fullstockwh.shipment.ShipmentService;
 import com.fullstockwh.shipment.dto.ShipOrderRequest;
+import com.fullstockwh.stock.StockRequestService;
+import com.fullstockwh.stock.StockRequest;
+import com.fullstockwh.user.UserEntity;
+import com.fullstockwh.user.UserService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -31,6 +37,8 @@ public class ManagerController
     private final ProductService productService;
     private final VariantRepository variantRepository;
     private final ShipmentService shipmentService;
+    private final StockRequestService stockRequestService;
+    private final UserService userService;
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
@@ -126,5 +134,41 @@ public class ManagerController
                 shipmentService.getAllShipments());
         model.addAttribute("activePage", "shipments");
         return "manager/shipments";
+    }
+
+    @GetMapping("/stock")
+    public String stock(Model model,
+                        @RequestParam(required = false, defaultValue = "false") boolean lowStockOnly,
+                        @AuthenticationPrincipal UserDetails userDetails) {
+        var variants = lowStockOnly
+                ? variantRepository.findAll().stream()
+                .filter(v -> v.getStockQuantity() < 5)
+                .collect(java.util.stream.Collectors.toList())
+                : variantRepository.findAll();
+
+        model.addAttribute("variants", variants);
+        model.addAttribute("lowStockOnly", lowStockOnly);
+        model.addAttribute("activePage", "stock");
+
+        UserEntity manager = userService.findByEmail(userDetails.getUsername());
+        model.addAttribute("myRequests",
+                stockRequestService.getRequestsByManager(manager));
+        return "manager/stock";
+    }
+
+    @PostMapping("/stock/request")
+    public String requestStock(@RequestParam Long variantId,
+                               @RequestParam Integer quantity,
+                               @RequestParam(required = false) String note,
+                               @AuthenticationPrincipal UserDetails userDetails,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            UserEntity manager = userService.findByEmail(userDetails.getUsername());
+            stockRequestService.createRequest(variantId, quantity, note, manager);
+            redirectAttributes.addFlashAttribute("success", "Stock request submitted.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/manager/stock";
     }
 }

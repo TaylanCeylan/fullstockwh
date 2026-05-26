@@ -26,6 +26,7 @@ import com.fullstockwh.common.FileStorageService;
 import com.fullstockwh.product.ProductImage;
 import com.fullstockwh.product.ProductImageRepository;
 import org.springframework.web.multipart.MultipartFile;
+import com.fullstockwh.stock.StockRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -51,6 +52,7 @@ public class AdminDashboardController
     private final OrderService orderService;
     private final FileStorageService fileStorageService;
     private final ProductImageRepository productImageRepository;
+    private final StockRequestService stockRequestService;
 
     @GetMapping("/dashboard")
     public String AdminDashboard(Model model) {
@@ -408,5 +410,36 @@ public class AdminDashboardController
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/admin/orders";
+    }
+
+    @GetMapping("/stock-requests")
+    public String stockRequests(Model model) {
+        model.addAttribute("requests", stockRequestService.getAllRequests());
+        model.addAttribute("activePage", "stockRequests");
+        return "admin/stock-requests";
+    }
+
+    @PostMapping("/stock-requests/{id}/approve")
+    public String approveRequest(@PathVariable Long id,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            stockRequestService.approveRequest(id);
+            redirectAttributes.addFlashAttribute("success", "Request approved.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/stock-requests";
+    }
+
+    @PostMapping("/stock-requests/{id}/reject")
+    public String rejectRequest(@PathVariable Long id,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            stockRequestService.rejectRequest(id);
+            redirectAttributes.addFlashAttribute("success", "Request rejected.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/stock-requests";
     }
 }
