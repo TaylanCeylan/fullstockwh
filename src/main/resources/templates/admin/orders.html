@@ -33,22 +33,41 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body py-3">
                     <form th:action="@{/admin/orders}" method="get" class="row g-3 align-items-end">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Search</label>
+                            <input type="text" name="search" class="form-control"
+                                   placeholder="Customer name or email..."
+                                   th:value="${search}">
+                        </div>
+                        <div class="col-md-2">
                             <label class="form-label fw-semibold">Status</label>
                             <select name="status" class="form-select">
                                 <option value="" th:selected="${selectedStatus == null or selectedStatus == ''}">All</option>
-                                <option value="PENDING"  th:selected="${selectedStatus == 'PENDING'}">Pending</option>
-                                <option value="SUCCESS"  th:selected="${selectedStatus == 'SUCCESS'}">Success</option>
-                                <option value="FAILED"   th:selected="${selectedStatus == 'FAILED'}">Failed</option>
+                                <option value="PENDING"   th:selected="${selectedStatus == 'PENDING'}">Pending</option>
+                                <option value="SUCCESS"   th:selected="${selectedStatus == 'SUCCESS'}">Confirmed</option>
                                 <option value="SHIPPED"   th:selected="${selectedStatus == 'SHIPPED'}">Shipped</option>
                                 <option value="DELIVERED" th:selected="${selectedStatus == 'DELIVERED'}">Delivered</option>
                                 <option value="CANCELLED" th:selected="${selectedStatus == 'CANCELLED'}">Cancelled</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-dark w-100">Filter</button>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Sort By</label>
+                            <select name="sortBy" class="form-select">
+                                <option value="date" th:selected="${sortBy == 'date'}">Date</option>
+                                <option value="total" th:selected="${sortBy == 'total'}">Total</option>
+                            </select>
                         </div>
                         <div class="col-md-2">
+                            <label class="form-label fw-semibold">Order</label>
+                            <select name="direction" class="form-select">
+                                <option value="desc" th:selected="${direction == 'desc'}">↓ Newest</option>
+                                <option value="asc" th:selected="${direction == 'asc'}">↑ Oldest</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="submit" class="btn btn-dark w-100">Filter</button>
+                        </div>
+                        <div class="col-md-1">
                             <a th:href="@{/admin/orders}" class="btn btn-outline-secondary w-100">Reset</a>
                         </div>
                     </form>
@@ -99,6 +118,10 @@
                                 </td>
                                 <td class="text-muted" th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></td>
                                 <td>
+                                    <a th:href="@{/admin/orders/{id}(id=${order.id})}"
+                                       class="btn btn-sm btn-outline-secondary me-1">
+                                        Detail
+                                    </a>
                                     <a th:if="${order.status.name() == 'SUCCESS'}"
                                        th:href="@{'/admin/orders/' + ${order.id} + '/ship'}"
                                        class="btn btn-sm btn-dark">
