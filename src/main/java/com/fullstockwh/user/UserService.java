@@ -40,4 +40,19 @@ public interface UserService
     void deletePaymentCard(PaymentCardDeleteRequest request);
 
     PaymentCardResponse getPaymentCardById(Long id);
+
+    @PreAuthorize("hasRole('ADMIN')")
+    List<UserResponse> getAllUsers();
+
+    @PreAuthorize("hasRole('ADMIN')")
+    void adminCreateUser(AdminUserCreateRequest request);
+
+    @PreAuthorize("hasRole('ADMIN')")
+    void adminUpdateUser(Long id, AdminUserUpdateRequest request);
+
+    @PreAuthorize("hasRole('ADMIN')")
+    void toggleUserEnabled(Long id);
+
+    @PreAuthorize("hasRole('ADMIN')")
+    void deleteUser(Long id);
 }

@@ -18,6 +18,9 @@
                     <div th:if="${param.error}" class="alert alert-danger text-center small">
                         Your Email or password is incorrect.
                     </div>
+                    <div th:if="${param.disabled}" class="alert alert-warning text-center small">
+                        Your account is inactive. Please contact support.
+                    </div>
                     <div th:if="${param.logout}" class="alert alert-info text-center small">
                         Logged out successfully.
                     </div>
@@ -40,7 +43,7 @@
                     </form>
 
                     <div class="text-center mt-4 pt-2 border-top">
-                        <p class="text-muted small mb-0">Do you have an account? <a th:href="@{/register}" class="text-decoration-none fw-semibold">Register</a></p>
+                        <p class="text-muted small mb-0">Don't have an account? <a th:href="@{/register}" class="text-decoration-none fw-semibold">Register</a></p>
                     </div>
                     <div th:if="${param.verified}" class="alert alert-success text-center small">
                         Email confirmed. You can log in now.

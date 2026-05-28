@@ -21,6 +21,8 @@ public interface OrderRepository extends JpaRepository<Order, Long>
     List<Order> findByUserWithItems(@Param("user") UserEntity user);
     List<Order> findByShippingAddressId(Long addressId);
 
+    boolean existsByUser(UserEntity user);
+
     @Query("SELECT COUNT(o) > 0 FROM Order o JOIN o.items i JOIN i.productVariant v " +
             "WHERE o.user = :user AND v.product.id = :productId AND o.status = 'SUCCESS'")
     boolean hasPurchasedProduct(@Param("user") UserEntity user, @Param("productId") Long productId);

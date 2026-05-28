@@ -45,6 +45,12 @@
                 Stock Requests
             </a>
         </li>
+        <li>
+            <a th:href="@{/admin/users}" class="nav-link text-white"
+               th:classappend="${activePage == 'users' ? 'active' : ''}">
+                Users
+            </a>
+        </li>
     </ul>
 
     <hr>

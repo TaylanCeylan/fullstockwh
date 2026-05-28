@@ -9,6 +9,11 @@ import com.fullstockwh.user.payment_card.PaymentCardRepository;
 import com.fullstockwh.user.dto.PaymentCardCreateRequest;
 import com.fullstockwh.user.dto.PaymentCardDeleteRequest;
 import com.fullstockwh.user.dto.PaymentCardResponse;
+import com.fullstockwh.auth.enums.Role;
+import com.fullstockwh.user.dto.AdminUserCreateRequest;
+import com.fullstockwh.user.dto.AdminUserUpdateRequest;
+import com.fullstockwh.user.dto.UserResponse;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.time.YearMonth;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +32,7 @@ class UserServiceImpl implements UserService
     private final AddressRepository addressRepository;
     private final OrderRepository orderRepository;
     private final PaymentCardRepository paymentCardRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     private UserEntity getCurrentUser() {
         String email = Objects.requireNonNull(
@@ -243,6 +249,80 @@ class UserServiceImpl implements UserService
                 .fullAddress (address.getFullAddress())
                 .latitude (address.getLatitude())
                 .longitude (address.getLongitude())
+                .build();
+    }
+
+    @Override
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(this::mapToUserResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void adminCreateUser(AdminUserCreateRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent())
+            throw new RuntimeException("Email already in use");
+
+        UserEntity user = UserEntity.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(request.getRole())
+                .enabled(true)
+                .build();
+
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void adminUpdateUser(Long id, AdminUserUpdateRequest request) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) user.setLastName(request.getLastName());
+
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void toggleUserEnabled(Long id) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setEnabled(!user.isEnabled());
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getRole() == Role.CUSTOMER) {
+            boolean hasOrders = orderRepository.existsByUser(user);
+            if (hasOrders)
+                throw new RuntimeException(
+                        "This customer has order history and cannot be deleted. You can deactivate the account instead.");
+        }
+
+        userRepository.delete(user);
+    }
+
+    private UserResponse mapToUserResponse(UserEntity user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .enabled(user.isEnabled())
                 .build();
     }
 }
