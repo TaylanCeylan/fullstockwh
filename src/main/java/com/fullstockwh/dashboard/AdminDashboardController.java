@@ -25,6 +25,7 @@ import com.fullstockwh.product.dto.ProductResponse;
 import com.fullstockwh.common.FileStorageService;
 import com.fullstockwh.product.ProductImage;
 import com.fullstockwh.product.ProductImageRepository;
+import com.fullstockwh.shipment.ShipmentRepository;
 import com.fullstockwh.user.UserService;
 import com.fullstockwh.user.dto.AdminUserCreateRequest;
 import com.fullstockwh.user.dto.AdminUserUpdateRequest;
@@ -58,6 +59,7 @@ public class AdminDashboardController
     private final FileStorageService fileStorageService;
     private final ProductImageRepository productImageRepository;
     private final StockRequestService stockRequestService;
+    private final ShipmentRepository shipmentRepository;
     private final UserService userService;
 
     @GetMapping("/dashboard")
@@ -230,22 +232,34 @@ public class AdminDashboardController
     @GetMapping("/orders")
     public String adminOrders(
             @RequestParam(required = false, defaultValue = "") String status,
+            @RequestParam(required = false, defaultValue = "") String search,
+            @RequestParam(required = false, defaultValue = "date") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String direction,
             Model model)
     {
-        List<Order> allOrders;
-        if (status != null && !status.isBlank()) {
-            com.fullstockwh.order.enums.OrderStatus orderStatus =
-                    com.fullstockwh.order.enums.OrderStatus.valueOf(status);
-            allOrders = orderRepository.findAll().stream()
-                    .filter(o -> o.getStatus() == orderStatus)
-                    .sorted((a, b) -> b.getOrderDate().compareTo(a.getOrderDate()))
-                    .collect(java.util.stream.Collectors.toList());
-        } else {
-            allOrders = orderRepository.findRecentOrdersWithDetails(
-                    PageRequest.of(0, 200));
-        }
+        List<Order> allOrders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 200))
+                .stream()
+                .filter(o -> status.isBlank() || o.getStatus().name().equals(status))
+                .filter(o -> search.isBlank() ||
+                        (o.getUser() != null && (
+                                (o.getUser().getFirstName() != null && o.getUser().getFirstName().toLowerCase().contains(search.toLowerCase())) ||
+                                        (o.getUser().getLastName() != null && o.getUser().getLastName().toLowerCase().contains(search.toLowerCase())) ||
+                                        o.getUser().getEmail().toLowerCase().contains(search.toLowerCase())
+                        )))
+                .sorted((a, b) -> {
+                    int cmp = switch (sortBy) {
+                        case "total" -> a.getTotalPrice().compareTo(b.getTotalPrice());
+                        default -> a.getOrderDate().compareTo(b.getOrderDate());
+                    };
+                    return direction.equals("asc") ? cmp : -cmp;
+                })
+                .collect(java.util.stream.Collectors.toList());
+
         model.addAttribute("allOrders", allOrders);
         model.addAttribute("selectedStatus", status);
+        model.addAttribute("search", search);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("direction", direction);
         model.addAttribute("activePage", "orders");
         return "admin/orders";
     }
@@ -562,5 +576,17 @@ public class AdminDashboardController
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/admin/users";
+    }
+
+    @GetMapping("/orders/{id}")
+    public String orderDetail(@PathVariable Long id, Model model) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        model.addAttribute("order", order);
+        model.addAttribute("shipment",
+                shipmentRepository.findByOrderId(id).orElse(null));
+        model.addAttribute("activePage", "orders");
+        return "admin/order-detail";
     }
 }
