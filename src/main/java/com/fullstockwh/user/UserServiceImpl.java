@@ -269,6 +269,7 @@ class UserServiceImpl implements UserService
         UserEntity user = UserEntity.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
+                .birthDate(request.getBirthDate())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())

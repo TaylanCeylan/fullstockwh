@@ -3,9 +3,7 @@
 <body>
 
 <div th:fragment="managerSidebar" class="d-flex flex-column flex-shrink-0 p-3 text-white sidebar">
-  <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
-    <span class="fs-4 fw-bold">Manager Panel</span>
-  </a>
+  <span class="fs-4 fw-bold text-white">Manager Dashboard</span>
   <hr>
 
   <ul class="nav nav-pills flex-column mb-auto">
@@ -38,6 +36,9 @@
   <hr>
 
   <div>
+    <a th:href="@{/}" class="btn btn-outline-light w-100 text-start mb-2">
+      <strong>← Home Page</strong>
+    </a>
     <form th:action="@{/logout}" method="post">
       <button type="submit" class="btn btn-danger w-100 text-start">
         <strong>Logout</strong>

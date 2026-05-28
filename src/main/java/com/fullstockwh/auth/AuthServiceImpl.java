@@ -36,6 +36,7 @@ class AuthServiceImpl implements AuthService
         UserEntity userEntity = UserEntity.builder()
                 .firstName(registerRequest.getFirstName())
                 .lastName(registerRequest.getLastName())
+                .birthDate(registerRequest.getBirthDate())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .role(Role.CUSTOMER)
