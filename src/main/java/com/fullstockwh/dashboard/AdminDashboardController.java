@@ -25,6 +25,11 @@ import com.fullstockwh.product.dto.ProductResponse;
 import com.fullstockwh.common.FileStorageService;
 import com.fullstockwh.product.ProductImage;
 import com.fullstockwh.product.ProductImageRepository;
+import com.fullstockwh.user.UserService;
+import com.fullstockwh.user.dto.AdminUserCreateRequest;
+import com.fullstockwh.user.dto.AdminUserUpdateRequest;
+import com.fullstockwh.user.dto.UserResponse;
+import com.fullstockwh.auth.enums.Role;
 import org.springframework.web.multipart.MultipartFile;
 import com.fullstockwh.stock.StockRequestService;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +58,7 @@ public class AdminDashboardController
     private final FileStorageService fileStorageService;
     private final ProductImageRepository productImageRepository;
     private final StockRequestService stockRequestService;
+    private final UserService userService;
 
     @GetMapping("/dashboard")
     public String AdminDashboard(Model model) {
@@ -441,5 +447,120 @@ public class AdminDashboardController
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/admin/stock-requests";
+    }
+
+    @GetMapping("/users")
+    public String adminUsers(
+            @RequestParam(required = false, defaultValue = "") String search,
+            @RequestParam(required = false, defaultValue = "") String role,
+            @RequestParam(required = false, defaultValue = "") String status,
+            @RequestParam(required = false, defaultValue = "id") String sortBy,
+            @RequestParam(required = false, defaultValue = "asc") String direction,
+            Model model) {
+
+        List<UserResponse> users = userService.getAllUsers().stream()
+                .filter(u -> search.isBlank() ||
+                        (u.getFirstName() != null && u.getFirstName().toLowerCase().contains(search.toLowerCase())) ||
+                        (u.getLastName() != null && u.getLastName().toLowerCase().contains(search.toLowerCase())) ||
+                        u.getEmail().toLowerCase().contains(search.toLowerCase()))
+                .filter(u -> role.isBlank() || u.getRole().name().equals(role))
+                .filter(u -> status.isBlank() ||
+                        (status.equals("active") && u.isEnabled()) ||
+                        (status.equals("inactive") && !u.isEnabled()))
+                .sorted((a, b) -> {
+                    int cmp = switch (sortBy) {
+                        case "name" -> {
+                            String nameA = (a.getFirstName() != null ? a.getFirstName() : "") +
+                                    (a.getLastName() != null ? a.getLastName() : "");
+                            String nameB = (b.getFirstName() != null ? b.getFirstName() : "") +
+                                    (b.getLastName() != null ? b.getLastName() : "");
+                            yield nameA.compareToIgnoreCase(nameB);
+                        }
+                        default -> a.getId().compareTo(b.getId());
+                    };
+                    return direction.equals("desc") ? -cmp : cmp;
+                })
+                .collect(java.util.stream.Collectors.toList());
+
+        model.addAttribute("users", users);
+        model.addAttribute("roles", Role.values());
+        model.addAttribute("createRequest", new AdminUserCreateRequest());
+        model.addAttribute("search", search);
+        model.addAttribute("selectedRole", role);
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("direction", direction);
+        model.addAttribute("nextDirection", "asc".equals(direction) ? "desc" : "asc");
+        model.addAttribute("activePage", "users");
+        return "admin/users";
+    }
+
+    @PostMapping("/users/add")
+    public String addUser(@ModelAttribute("createRequest") AdminUserCreateRequest request,
+                          RedirectAttributes redirectAttributes) {
+        try {
+            userService.adminCreateUser(request);
+            redirectAttributes.addFlashAttribute("success", "User created successfully.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/users";
+    }
+
+    @GetMapping("/users/edit/{id}")
+    public String showEditUserForm(@PathVariable Long id, Model model) {
+        UserResponse user = userService.getAllUsers().stream()
+                .filter(u -> u.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        AdminUserUpdateRequest updateRequest = new AdminUserUpdateRequest();
+        updateRequest.setFirstName(user.getFirstName());
+        updateRequest.setLastName(user.getLastName());
+
+        model.addAttribute("editUser", user);
+        model.addAttribute("updateRequest", updateRequest);
+        model.addAttribute("users", userService.getAllUsers());
+        model.addAttribute("roles", Role.values());
+        model.addAttribute("createRequest", new AdminUserCreateRequest());
+        model.addAttribute("activePage", "users");
+        return "admin/users";
+    }
+
+    @PostMapping("/users/update/{id}")
+    public String updateUser(@PathVariable Long id,
+                             @ModelAttribute("updateRequest") AdminUserUpdateRequest request,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            userService.adminUpdateUser(id, request);
+            redirectAttributes.addFlashAttribute("success", "User updated successfully.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/users";
+    }
+
+    @PostMapping("/users/toggle/{id}")
+    public String toggleUser(@PathVariable Long id,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            userService.toggleUserEnabled(id);
+            redirectAttributes.addFlashAttribute("success", "User status updated.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/users";
+    }
+
+    @PostMapping("/users/delete/{id}")
+    public String deleteUser(@PathVariable Long id,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            userService.deleteUser(id);
+            redirectAttributes.addFlashAttribute("success", "User deleted.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/users";
     }
 }

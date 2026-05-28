@@ -22,6 +22,7 @@ public class SecurityConfig
 {
     private final MyUserDetailsService userDetailsService;
     private final CustomSuccessHandler customSuccessHandler;
+    private final CustomAuthFailureHandler customAuthFailureHandler;
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder()
@@ -54,6 +55,7 @@ public class SecurityConfig
                 .formLogin(form -> form
                         .loginPage("/login")
                         .successHandler(customSuccessHandler)
+                        .failureHandler(customAuthFailureHandler)
                         .permitAll());
 
         return http.build();
