@@ -12,4 +12,8 @@ public interface ReviewService
     List<ReviewResponse> getReviewsByProductId(Long productId);
 
     boolean canUserReview(Long productId, UserEntity user);
+
+    void deleteReview(Long reviewId);
+
+    List<ReviewResponse> getAllReviews();
 }

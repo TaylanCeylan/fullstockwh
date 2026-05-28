@@ -8,6 +8,7 @@ import com.fullstockwh.user.UserEntity;
 import com.fullstockwh.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,6 +55,21 @@ class ReviewServiceImpl implements ReviewService
         if (user == null) return false;
         return orderRepository.hasPurchasedProduct(user, productId)
                 && !reviewRepository.existsByProductIdAndUserEntityId(productId, user.getId());
+    }
+
+    @Override
+    @Transactional
+    public void deleteReview(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+        reviewRepository.delete(review);
+    }
+
+    @Override
+    public List<ReviewResponse> getAllReviews() {
+        return reviewRepository.findAllWithDetails().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     private ReviewResponse mapToResponse(Review review) {
