@@ -51,6 +51,12 @@
                 Users
             </a>
         </li>
+        <li>
+            <a th:href="@{/admin/reviews}" class="nav-link text-white"
+               th:classappend="${activePage == 'reviews' ? 'active' : ''}">
+                Reviews
+            </a>
+        </li>
     </ul>
 
     <hr>

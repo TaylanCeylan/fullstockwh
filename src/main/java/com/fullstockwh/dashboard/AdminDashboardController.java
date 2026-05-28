@@ -33,6 +33,7 @@ import com.fullstockwh.user.dto.UserResponse;
 import com.fullstockwh.auth.enums.Role;
 import org.springframework.web.multipart.MultipartFile;
 import com.fullstockwh.stock.StockRequestService;
+import com.fullstockwh.product.review.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -61,6 +62,7 @@ public class AdminDashboardController
     private final StockRequestService stockRequestService;
     private final ShipmentRepository shipmentRepository;
     private final UserService userService;
+    private final ReviewService reviewService;
 
     @GetMapping("/dashboard")
     public String AdminDashboard(Model model) {
@@ -588,5 +590,52 @@ public class AdminDashboardController
                 shipmentRepository.findByOrderId(id).orElse(null));
         model.addAttribute("activePage", "orders");
         return "admin/order-detail";
+    }
+
+    @GetMapping("/reviews")
+    public String adminReviews(
+            @RequestParam(required = false, defaultValue = "") String search,
+            @RequestParam(required = false, defaultValue = "") String product,
+            @RequestParam(required = false, defaultValue = "date") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String direction,
+            Model model) {
+
+        List<com.fullstockwh.product.review.dto.ReviewResponse> reviews = reviewService.getAllReviews()
+                .stream()
+                .filter(r -> search.isBlank() ||
+                        r.getUserFullName().toLowerCase().contains(search.toLowerCase()) ||
+                        r.getProductName().toLowerCase().contains(search.toLowerCase()))
+                .filter(r -> product.isBlank() ||
+                        r.getProductName().toLowerCase().contains(product.toLowerCase()))
+                .sorted((a, b) -> {
+                    int cmp = switch (sortBy) {
+                        case "rating" -> Integer.compare(a.getRating(), b.getRating());
+                        case "product" -> a.getProductName().compareToIgnoreCase(b.getProductName());
+                        case "id" -> Long.compare(a.getId(), b.getId());
+                        default -> a.getCreatedAt().compareTo(b.getCreatedAt());
+                    };
+                    return direction.equals("asc") ? cmp : -cmp;
+                })
+                .collect(java.util.stream.Collectors.toList());
+
+        model.addAttribute("reviews", reviews);
+        model.addAttribute("search", search);
+        model.addAttribute("selectedProduct", product);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("direction", direction);
+        model.addAttribute("activePage", "reviews");
+        return "admin/reviews";
+    }
+
+    @PostMapping("/reviews/{id}/delete")
+    public String deleteReview(@PathVariable Long id,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            reviewService.deleteReview(id);
+            redirectAttributes.addFlashAttribute("success", "Review deleted.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/reviews";
     }
 }
