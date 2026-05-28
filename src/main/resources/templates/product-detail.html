@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8">
   <title th:text="${product.name + ' - Fullstockwh'}">Product Detail</title>
@@ -210,7 +210,7 @@
         No variants have been added for this product yet.
       </div>
 
-      <form th:action="@{/cart/add}" method="post">
+      <form sec:authorize="hasRole('CUSTOMER')" th:action="@{/cart/add}" method="post">
 
         <input type="hidden" name="variantId" id="hiddenVariantId" value="">
 
