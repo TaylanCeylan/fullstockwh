@@ -435,8 +435,48 @@ public class AdminDashboardController
     }
 
     @GetMapping("/stock-requests")
-    public String stockRequests(Model model) {
-        model.addAttribute("requests", stockRequestService.getAllRequests());
+    public String stockRequests(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = "date") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String direction,
+            Model model) {
+
+        List<com.fullstockwh.stock.StockRequest> requests = stockRequestService.getAllRequests();
+
+        if (search != null && !search.isBlank()) {
+            String q = search.toLowerCase();
+            requests = requests.stream()
+                    .filter(r ->
+                            r.getRequestedBy().getFirstName().toLowerCase().contains(q) ||
+                                    r.getRequestedBy().getLastName().toLowerCase().contains(q) ||
+                                    r.getVariant().getProduct().getName().toLowerCase().contains(q))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        if (status != null && !status.isBlank()) {
+            com.fullstockwh.stock.enums.StockRequestStatus s =
+                    com.fullstockwh.stock.enums.StockRequestStatus.valueOf(status);
+            requests = requests.stream()
+                    .filter(r -> r.getStatus() == s)
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        if ("qty".equals(sortBy)) {
+            requests.sort((a, b) -> "asc".equals(direction)
+                    ? a.getRequestedQuantity() - b.getRequestedQuantity()
+                    : b.getRequestedQuantity() - a.getRequestedQuantity());
+        } else {
+            requests.sort((a, b) -> "asc".equals(direction)
+                    ? a.getCreatedAt().compareTo(b.getCreatedAt())
+                    : b.getCreatedAt().compareTo(a.getCreatedAt()));
+        }
+
+        model.addAttribute("requests", requests);
+        model.addAttribute("search", search);
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("direction", direction);
         model.addAttribute("activePage", "stockRequests");
         return "admin/stock-requests";
     }
@@ -459,6 +499,32 @@ public class AdminDashboardController
         try {
             stockRequestService.rejectRequest(id);
             redirectAttributes.addFlashAttribute("success", "Request rejected.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/stock-requests";
+    }
+
+    @PostMapping("/stock-requests/bulk-approve")
+    public String bulkApprove(@RequestParam List<Long> requestIds,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            stockRequestService.bulkApprove(requestIds);
+            redirectAttributes.addFlashAttribute("success",
+                    requestIds.size() + " requests approved.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/stock-requests";
+    }
+
+    @PostMapping("/stock-requests/bulk-reject")
+    public String bulkReject(@RequestParam List<Long> requestIds,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            stockRequestService.bulkReject(requestIds);
+            redirectAttributes.addFlashAttribute("success",
+                    requestIds.size() + " requests rejected.");
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }

@@ -13,4 +13,6 @@ public interface StockRequestService
     List<StockRequest> getAllRequests();
     long getPendingCount();
     void createBulkRequest(List<Long> variantIds, Integer quantity, String note, UserEntity manager);
+    void bulkApprove(List<Long> requestIds);
+    void bulkReject(List<Long> requestIds);
 }
