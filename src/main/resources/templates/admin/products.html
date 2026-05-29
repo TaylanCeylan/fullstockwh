@@ -256,9 +256,9 @@
                             <td>
                                 <span class="badge px-3"
                                       th:classappend="${p.totalStock == 0 ? 'bg-danger' :
-                                                      (p.totalStock <= 10 ? 'bg-warning text-dark' : 'bg-success')}"
+                                             (p.totalStock <= lowStockThreshold ? 'bg-warning text-dark' : 'bg-success')}"
                                       th:text="${p.totalStock == 0 ? 'Out of Stock' :
-                                               (p.totalStock <= 10 ? p.totalStock + ' - Low' : p.totalStock + ' - OK')}">
+                                             (p.totalStock <= lowStockThreshold ? p.totalStock + ' - Low' : p.totalStock + ' - OK')}">
                                 </span>
                             </td>
 

@@ -2,6 +2,7 @@ package com.fullstockwh.product;
 
 
 import com.fullstockwh.category.enums.TargetGender;
+import com.fullstockwh.common.StockThreshold;
 import com.fullstockwh.product.dto.ProductCreateRequest;
 import com.fullstockwh.product.dto.ProductUpdateRequest;
 import com.fullstockwh.product.dto.ProductResponse;
@@ -151,7 +152,7 @@ class ProductServiceImpl implements ProductService
 
         return results.stream()
                 .map(this::mapToResponse)
-                .filter(p -> !lowStockOnly || p.getTotalStock() <= 10)
+                .filter(p -> !lowStockOnly || p.getTotalStock() <= StockThreshold.PRODUCT_LOW_STOCK)
                 .collect(Collectors.toList());
     }
 
@@ -174,8 +175,8 @@ class ProductServiceImpl implements ProductService
         int total = variants.stream()
                 .mapToInt(ProductVariant::getStockQuantity)
                 .sum();
-        if (total > 10) return "IN_STOCK";
-        if (total > 0)  return "LOW_STOCK";
+        if (total > StockThreshold.PRODUCT_LOW_STOCK) return "IN_STOCK";
+        if (total > 0) return "LOW_STOCK";
         return "OUT_OF_STOCK";
     }
 

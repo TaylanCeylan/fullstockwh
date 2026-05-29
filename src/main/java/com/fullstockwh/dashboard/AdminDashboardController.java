@@ -5,6 +5,7 @@ import com.fullstockwh.category.dto.CategoryCreateRequest;
 import com.fullstockwh.category.dto.CategoryResponse;
 import com.fullstockwh.category.dto.CategoryUpdateRequest;
 import com.fullstockwh.category.enums.TargetGender;
+import com.fullstockwh.common.StockThreshold;
 import com.fullstockwh.order.Order;
 import com.fullstockwh.order.OrderRepository;
 import com.fullstockwh.order.OrderService;
@@ -88,7 +89,7 @@ public class AdminDashboardController
 
         List<Order> recentOrders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 10));
         model.addAttribute("recentOrders", recentOrders);
-        List<ProductVariant> lowStockVariants = variantRepository.findByStockQuantityLessThan(5);
+        List<ProductVariant> lowStockVariants = variantRepository.findByStockQuantityLessThan(StockThreshold.LOW_STOCK);
         model.addAttribute("lowStockVariants", lowStockVariants);
         model.addAttribute("lowStockCount", lowStockVariants.size());
         model.addAttribute("activePage", "dashboard");
@@ -117,6 +118,7 @@ public class AdminDashboardController
         model.addAttribute("categoryId", categoryId);
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("direction", direction);
+        model.addAttribute("lowStockThreshold", StockThreshold.PRODUCT_LOW_STOCK);
         model.addAttribute("lowStockOnly", lowStockOnly);
         model.addAttribute("nextDirection", "asc".equals(direction) ? "desc" : "asc");
         return "admin/products";
@@ -276,11 +278,12 @@ public class AdminDashboardController
         var variants = variantService.getVariantsByProductId(id);
         if (lowStockOnly) {
             variants = variants.stream()
-                    .filter(v -> v.getStockQuantity() <= 10)
+                    .filter(v -> v.getStockQuantity() <= StockThreshold.LOW_STOCK)
                     .collect(java.util.stream.Collectors.toList());
         }
 
         model.addAttribute("variants", variants);
+        model.addAttribute("lowStockThreshold", StockThreshold.LOW_STOCK);
         model.addAttribute("lowStockOnly", lowStockOnly);
         model.addAttribute("variantRequest", new VariantCreateRequest());
         model.addAttribute("colors", Color.values());
