@@ -193,9 +193,9 @@
                         <td>
                             <span class="badge"
                                   th:classappend="${v.stockQuantity == 0 ? 'bg-danger' :
-                                                  (v.stockQuantity <= 10 ? 'bg-warning text-dark' : 'bg-success')}"
+                                        (v.stockQuantity <= lowStockThreshold ? 'bg-warning text-dark' : 'bg-success')}"
                                   th:text="${v.stockQuantity == 0 ? 'Out of Stock' :
-                                           (v.stockQuantity <= 10 ? v.stockQuantity + ' - Low' : v.stockQuantity + ' in stock')}">
+                                        (v.stockQuantity <= lowStockThreshold ? v.stockQuantity + ' - Low' : v.stockQuantity + ' in stock')}">
                             </span>
                         </td>
                         <td th:text="${v.unitWeight != null ? v.unitWeight : '—'}"></td>

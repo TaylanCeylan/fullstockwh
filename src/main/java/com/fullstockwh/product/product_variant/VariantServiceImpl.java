@@ -1,5 +1,6 @@
 package com.fullstockwh.product.product_variant;
 
+import com.fullstockwh.common.StockThreshold;
 import com.fullstockwh.product.product_variant.dto.VariantCreateRequest;
 import com.fullstockwh.product.product_variant.dto.VariantUpdateRequest;
 import com.fullstockwh.product.product_variant.dto.VariantResponse;
@@ -124,8 +125,8 @@ class VariantServiceImpl implements VariantService
     }
 
     private String resolveStockStatus(int quantity) {
-        if (quantity > 10)  return "IN_STOCK";
-        if (quantity > 0)   return "LOW_STOCK";
+        if (quantity > StockThreshold.LOW_STOCK) return "IN_STOCK";
+        if (quantity > 0) return "LOW_STOCK";
         return "OUT_OF_STOCK";
     }
 }

@@ -140,7 +140,7 @@
             </thead>
             <tbody>
             <tr th:each="variant : ${variants}"
-                th:classappend="${variant.stockQuantity == 0} ? 'out-stock' : (${variant.stockQuantity < 5} ? 'low-stock' : '')"
+                th:classappend="${variant.stockQuantity == 0} ? 'out-stock' : (${variant.stockQuantity < lowStockThreshold} ? 'low-stock' : '')"
                 th:attr="data-name=${variant.product.name},
              data-color=${variant.color},
              data-size=${variant.size},
@@ -159,10 +159,10 @@
               <td>
                                 <span th:if="${variant.stockQuantity == 0}"
                                       class="badge bg-danger">Out of Stock</span>
-                <span th:if="${variant.stockQuantity > 0 and variant.stockQuantity < 5}"
+                <span th:if="${variant.stockQuantity > 0 and variant.stockQuantity < lowStockThreshold}"
                       class="badge bg-warning text-dark"
                       th:text="${variant.stockQuantity} + ' - Low'"></span>
-                <span th:if="${variant.stockQuantity >= 5}"
+                <span th:if="${variant.stockQuantity >= lowStockThreshold}"
                       class="badge bg-success"
                       th:text="${variant.stockQuantity} + ' in stock'"></span>
               </td>

@@ -1,5 +1,6 @@
 package com.fullstockwh.dashboard;
 
+import com.fullstockwh.common.StockThreshold;
 import com.fullstockwh.order.Order;
 import com.fullstockwh.order.OrderRepository;
 import com.fullstockwh.order.OrderService;
@@ -54,7 +55,7 @@ public class ManagerController
                 .filter(o -> o.getStatus() == OrderStatus.SHIPPED)
                 .count();
 
-        int lowStockCount = variantRepository.findByStockQuantityLessThan(5).size();
+        int lowStockCount = variantRepository.findByStockQuantityLessThan(StockThreshold.LOW_STOCK).size();
 
         long pendingStockRequests = stockRequestService.getPendingCount();
         List<Shipment> overdueShipments = shipmentRepository.findOverdueShipments(LocalDateTime.now());
@@ -204,12 +205,13 @@ public class ManagerController
                         @AuthenticationPrincipal UserDetails userDetails) {
         var variants = lowStockOnly
                 ? variantRepository.findAll().stream()
-                .filter(v -> v.getStockQuantity() < 5)
+                .filter(v -> v.getStockQuantity() < StockThreshold.LOW_STOCK)
                 .collect(java.util.stream.Collectors.toList())
                 : variantRepository.findAll();
 
         model.addAttribute("variants", variants);
         model.addAttribute("lowStockOnly", lowStockOnly);
+        model.addAttribute("lowStockThreshold", StockThreshold.LOW_STOCK);
         model.addAttribute("activePage", "stock");
 
         UserEntity manager = userService.findByEmail(userDetails.getUsername());
