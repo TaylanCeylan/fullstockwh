@@ -80,4 +80,11 @@ public class StockRequestServiceImpl implements StockRequestService
     public List<StockRequest> getAllRequests() {
         return stockRequestRepository.findAllByOrderByCreatedAtDesc();
     }
+
+    @Override
+    public long getPendingCount() {
+        return stockRequestRepository
+                .findByStatusOrderByCreatedAtDesc(StockRequestStatus.PENDING)
+                .size();
+    }
 }

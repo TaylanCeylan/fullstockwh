@@ -8,6 +8,9 @@ import com.fullstockwh.order.dto.OrderItemResponse;
 import com.fullstockwh.order.dto.OrderResponse;
 import com.fullstockwh.order.enums.OrderStatus;
 import com.fullstockwh.order.order_item.OrderItem;
+import com.fullstockwh.shipment.Shipment;
+import com.fullstockwh.shipment.ShipmentRepository;
+import com.fullstockwh.shipment.enums.ShipmentStatus;
 import com.fullstockwh.product.product_variant.ProductVariant;
 import com.fullstockwh.product.product_variant.VariantRepository;
 import com.fullstockwh.user.UserEntity;
@@ -30,6 +33,7 @@ public class OrderServiceImpl implements OrderService
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final VariantRepository variantRepository;
+    private final ShipmentRepository shipmentRepository;
     private final AddressRepository addressRepository;
 
     @Override
@@ -136,6 +140,11 @@ public class OrderServiceImpl implements OrderService
             variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
             variantRepository.save(variant);
         }
+
+        shipmentRepository.findByOrderId(order.getId()).ifPresent(shipment -> {
+            shipment.setStatus(ShipmentStatus.CANCELLED);
+            shipmentRepository.save(shipment);
+        });
         order.setStatus(OrderStatus.CANCELLED);
         order.setCancelledAt(LocalDateTime.now());
         orderRepository.save(order);

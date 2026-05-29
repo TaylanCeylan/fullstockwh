@@ -60,4 +60,11 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long>
             "GROUP BY a.city ORDER BY COUNT(s) DESC")
     List<Object[]> getCityDistribution(@Param("start") LocalDateTime start,
                                        @Param("end")   LocalDateTime end);
+
+    @Query("SELECT s FROM Shipment s JOIN FETCH s.order o JOIN FETCH o.user " +
+            "WHERE s.estimatedDelivery < :now " +
+            "AND s.status = com.fullstockwh.shipment.enums.ShipmentStatus.SHIPPED " +
+            "AND o.status <> com.fullstockwh.order.enums.OrderStatus.CANCELLED")
+    List<Shipment> findOverdueShipments(@Param("now") LocalDateTime now);
+
 }

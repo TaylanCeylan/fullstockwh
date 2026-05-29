@@ -11,4 +11,5 @@ public interface StockRequestService
     void rejectRequest(Long requestId);
     List<StockRequest> getRequestsByManager(UserEntity manager);
     List<StockRequest> getAllRequests();
+    long getPendingCount();
 }

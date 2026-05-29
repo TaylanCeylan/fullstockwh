@@ -9,6 +9,7 @@ import com.fullstockwh.product.dto.ProductResponse;
 import com.fullstockwh.product.product_variant.VariantRepository;
 import com.fullstockwh.shipment.ShipmentRepository;
 import com.fullstockwh.shipment.enums.ShipmentStatus;
+import com.fullstockwh.shipment.Shipment;
 import com.fullstockwh.shipment.ShipmentService;
 import com.fullstockwh.shipment.dto.ShipOrderRequest;
 import com.fullstockwh.stock.StockRequestService;
@@ -26,6 +27,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Controller
 @RequestMapping("/manager")
@@ -37,6 +39,7 @@ public class ManagerController
     private final ProductService productService;
     private final VariantRepository variantRepository;
     private final ShipmentService shipmentService;
+    private final ShipmentRepository shipmentRepository;
     private final StockRequestService stockRequestService;
     private final UserService userService;
 
@@ -53,33 +56,69 @@ public class ManagerController
 
         int lowStockCount = variantRepository.findByStockQuantityLessThan(5).size();
 
+        long pendingStockRequests = stockRequestService.getPendingCount();
+        List<Shipment> overdueShipments = shipmentRepository.findOverdueShipments(LocalDateTime.now());
+
         List<ProductResponse> products = productService.getAllProducts();
 
         model.addAttribute("pendingOrders", pendingOrders);
         model.addAttribute("shippedOrders", shippedOrders);
         model.addAttribute("lowStockCount", lowStockCount);
         model.addAttribute("products", products);
-        model.addAttribute("recentOrders", allOrders.stream().limit(10).collect(Collectors.toList()));
+        List<Order> recentOrders = allOrders.stream().limit(10).collect(Collectors.toList());
+        model.addAttribute("recentOrders", recentOrders);
+        List<String> orderDates = recentOrders.stream()
+                .map(o -> o.getOrderDate().toLocalDate().toString())
+                .collect(Collectors.toList());
+        model.addAttribute("orderDates", orderDates);
+        model.addAttribute("pendingStockRequests", pendingStockRequests);
+        model.addAttribute("overdueShipmentsCount", overdueShipments.size());
         model.addAttribute("activePage", "dashboard");
         return "manager/dashboard";
     }
 
     @GetMapping("/orders")
     public String orders(
-            @RequestParam(required = false, defaultValue = "") String status,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "date") String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String direction,
             Model model) {
-        List<Order> allOrders;
+
+        List<Order> allOrders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 500));
+
         if (status != null && !status.isBlank()) {
             OrderStatus orderStatus = OrderStatus.valueOf(status);
-            allOrders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 200))
-                    .stream()
+            allOrders = allOrders.stream()
                     .filter(o -> o.getStatus() == orderStatus)
                     .collect(Collectors.toList());
-        } else {
-            allOrders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 200));
         }
+
+        if (search != null && !search.isBlank()) {
+            String q = search.toLowerCase();
+            allOrders = allOrders.stream()
+                    .filter(o -> o.getUser() != null && (
+                            o.getUser().getFirstName().toLowerCase().contains(q) ||
+                                    o.getUser().getLastName().toLowerCase().contains(q) ||
+                                    o.getUser().getUsername().toLowerCase().contains(q)))
+                    .collect(Collectors.toList());
+        }
+
+        if ("total".equals(sortBy)) {
+            allOrders.sort((a, b) -> "asc".equals(direction)
+                    ? a.getTotalPrice().compareTo(b.getTotalPrice())
+                    : b.getTotalPrice().compareTo(a.getTotalPrice()));
+        } else {
+            allOrders.sort((a, b) -> "asc".equals(direction)
+                    ? a.getOrderDate().compareTo(b.getOrderDate())
+                    : b.getOrderDate().compareTo(a.getOrderDate()));
+        }
+
         model.addAttribute("allOrders", allOrders);
         model.addAttribute("selectedStatus", status);
+        model.addAttribute("search", search);
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("direction", direction);
         model.addAttribute("activePage", "orders");
         return "manager/orders";
     }
@@ -129,9 +168,22 @@ public class ManagerController
     }
 
     @GetMapping("/shipments")
-    public String shipments(Model model) {
-        model.addAttribute("shipments",
-                shipmentService.getAllShipments());
+    public String shipments(
+            @RequestParam(required = false, defaultValue = "false") boolean overdueOnly,
+            Model model) {
+        List<com.fullstockwh.shipment.Shipment> shipments = overdueOnly
+                ? shipmentRepository.findOverdueShipments(LocalDateTime.now())
+                : shipmentRepository.findAll();
+
+        java.util.Set<Long> overdueIds = shipmentRepository
+                .findOverdueShipments(LocalDateTime.now())
+                .stream()
+                .map(com.fullstockwh.shipment.Shipment::getId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        model.addAttribute("shipments", shipments);
+        model.addAttribute("overdueIds", overdueIds);
+        model.addAttribute("overdueOnly", overdueOnly);
         model.addAttribute("activePage", "shipments");
         return "manager/shipments";
     }
