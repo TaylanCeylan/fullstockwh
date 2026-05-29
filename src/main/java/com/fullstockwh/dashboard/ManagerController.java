@@ -8,6 +8,7 @@ import com.fullstockwh.order.enums.OrderStatus;
 import com.fullstockwh.product.ProductService;
 import com.fullstockwh.product.dto.ProductResponse;
 import com.fullstockwh.product.product_variant.VariantRepository;
+import com.fullstockwh.product.product_variant.VariantService;
 import com.fullstockwh.shipment.ShipmentRepository;
 import com.fullstockwh.shipment.enums.ShipmentStatus;
 import com.fullstockwh.shipment.Shipment;
@@ -16,11 +17,13 @@ import com.fullstockwh.shipment.dto.ShipOrderRequest;
 import com.fullstockwh.stock.StockRequestService;
 import com.fullstockwh.stock.StockRequest;
 import com.fullstockwh.user.UserEntity;
+import com.fullstockwh.user.UserRepository;
 import com.fullstockwh.user.UserService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +46,7 @@ public class ManagerController
     private final ShipmentRepository shipmentRepository;
     private final StockRequestService stockRequestService;
     private final UserService userService;
+    private final VariantService variantService;
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
@@ -200,24 +204,61 @@ public class ManagerController
     }
 
     @GetMapping("/stock")
-    public String stock(Model model,
-                        @RequestParam(required = false, defaultValue = "false") boolean lowStockOnly,
-                        @AuthenticationPrincipal UserDetails userDetails) {
-        var variants = lowStockOnly
-                ? variantRepository.findAll().stream()
-                .filter(v -> v.getStockQuantity() < StockThreshold.LOW_STOCK)
-                .collect(java.util.stream.Collectors.toList())
-                : variantRepository.findAll();
+    public String stock(
+            @RequestParam(required = false, defaultValue = "") String search,
+            @RequestParam(required = false, defaultValue = "false") boolean lowStockOnly,
+            @AuthenticationPrincipal UserDetails userDetails,
+            Model model) {
 
-        model.addAttribute("variants", variants);
-        model.addAttribute("lowStockOnly", lowStockOnly);
-        model.addAttribute("lowStockThreshold", StockThreshold.LOW_STOCK);
-        model.addAttribute("activePage", "stock");
+        List<com.fullstockwh.product.dto.ProductResponse> products =
+                productService.getAllProducts();
+
+        if (!search.isBlank()) {
+            String q = search.toLowerCase();
+            products = products.stream()
+                    .filter(p -> p.getName().toLowerCase().contains(q) ||
+                            (p.getCategoryName() != null &&
+                                    p.getCategoryName().toLowerCase().contains(q)))
+                    .collect(Collectors.toList());
+        }
+
+        if (lowStockOnly) {
+            products = products.stream()
+                    .filter(p -> p.getTotalStock() <= StockThreshold.PRODUCT_LOW_STOCK)
+                    .collect(Collectors.toList());
+        }
 
         UserEntity manager = userService.findByEmail(userDetails.getUsername());
-        model.addAttribute("myRequests",
-                stockRequestService.getRequestsByManager(manager));
+
+        model.addAttribute("products", products);
+        model.addAttribute("search", search);
+        model.addAttribute("lowStockOnly", lowStockOnly);
+        model.addAttribute("lowStockThreshold", StockThreshold.PRODUCT_LOW_STOCK);
+        model.addAttribute("myRequests", stockRequestService.getRequestsByManager(manager));
+        model.addAttribute("activePage", "stock");
         return "manager/stock";
+    }
+
+    @GetMapping("/stock/{productId}")
+    public String stockDetail(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal UserDetails userDetails,
+            Model model) {
+
+        com.fullstockwh.product.dto.ProductResponse product =
+                productService.getProductById(productId);
+
+        List<com.fullstockwh.product.product_variant.dto.VariantResponse> variants =
+                variantService.getVariantsByProductId(productId);
+
+        UserEntity manager = userService.findByEmail(userDetails.getUsername());
+
+        model.addAttribute("product", product);
+        model.addAttribute("variants", variants);
+        model.addAttribute("lowStockThreshold", StockThreshold.LOW_STOCK);
+        model.addAttribute("myRequests", stockRequestService.getRequestsByManager(manager));
+        model.addAttribute("activePage", "stock");
+        return "manager/stock-detail";
     }
 
     @PostMapping("/stock/request")
