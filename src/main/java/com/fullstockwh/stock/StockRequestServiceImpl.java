@@ -87,4 +87,9 @@ public class StockRequestServiceImpl implements StockRequestService
                 .findByStatusOrderByCreatedAtDesc(StockRequestStatus.PENDING)
                 .size();
     }
+
+    @Override
+    public void createBulkRequest(List<Long> variantIds, Integer quantity, String note, UserEntity manager) {
+        variantIds.forEach(variantId -> createRequest(variantId, quantity, note, manager));
+    }
 }

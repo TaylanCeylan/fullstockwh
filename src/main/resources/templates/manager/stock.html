@@ -69,16 +69,57 @@
     <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
     <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
+    <div class="card shadow-sm mb-3">
+      <div class="card-body py-3">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Search</label>
+            <input type="text" id="stockSearch" class="form-control"
+                   placeholder="Product name...">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Color</label>
+            <select id="colorFilter" class="form-select">
+              <option value="">All</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Size</label>
+            <select id="sizeFilter" class="form-select">
+              <option value="">All</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Sort by Stock</label>
+            <select id="stockSort" class="form-select">
+              <option value="">Default</option>
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card shadow-sm mb-5">
       <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="fw-bold mb-0">All Variants</h5>
-        <div>
+        <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-sm btn-outline-secondary" onclick="toggleSelectAll()">Select All</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="clearSelection()">Clear</button>
+          <button class="btn btn-sm btn-success" id="bulkRequestBtn"
+                  onclick="openBulkModal()" disabled>
+            Bulk Request (<span id="selectedCount">0</span>)
+          </button>
           <a th:href="@{/manager/stock(lowStockOnly=true)}"
              th:classappend="${lowStockOnly} ? 'btn btn-warning btn-sm' : 'btn btn-outline-warning btn-sm'">
             Low Stock Only
           </a>
           <a th:href="@{/manager/stock}"
-             th:classappend="${!lowStockOnly} ? 'btn btn-dark btn-sm ms-1' : 'btn btn-outline-dark btn-sm ms-1'">
+             th:classappend="${!lowStockOnly} ? 'btn btn-dark btn-sm' : 'btn btn-outline-dark btn-sm'">
             Show All
           </a>
         </div>
@@ -88,7 +129,8 @@
           <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
             <tr>
-              <th class="ps-4">Product</th>
+              <th class="ps-4"></th>
+              <th>Product</th>
               <th>Color</th>
               <th>Size</th>
               <th>SKU</th>
@@ -98,8 +140,19 @@
             </thead>
             <tbody>
             <tr th:each="variant : ${variants}"
-                th:classappend="${variant.stockQuantity == 0} ? 'out-stock' : (${variant.stockQuantity < 5} ? 'low-stock' : '')">
-              <td class="ps-4 fw-semibold" th:text="${variant.product.name}"></td>
+                th:classappend="${variant.stockQuantity == 0} ? 'out-stock' : (${variant.stockQuantity < 5} ? 'low-stock' : '')"
+                th:attr="data-name=${variant.product.name},
+             data-color=${variant.color},
+             data-size=${variant.size},
+             data-stock=${variant.stockQuantity}">
+              <td class="ps-4">
+                <input type="checkbox" class="variant-check"
+                       th:attr="data-variant-id=${variant.id},
+                    data-product-name=${variant.product.name},
+                    data-color=${variant.color},
+                    data-size=${variant.size}">
+              </td>
+              <td class="fw-semibold" th:text="${variant.product.name}"></td>
               <td th:text="${variant.color}"></td>
               <td th:text="${variant.size}"></td>
               <td class="text-muted small font-monospace" th:text="${variant.sku}"></td>
@@ -131,6 +184,38 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+
+<div class="modal fade" id="bulkRequestModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Bulk Stock Request</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/manager/stock/bulk-request" method="post">
+        <div class="modal-body">
+          <div id="bulkVariantList" class="mb-3 text-muted small"></div>
+          <div id="bulkHiddenInputs"></div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Quantity <span class="text-muted fw-normal">(applied to all selected)</span></label>
+            <input type="number" name="quantity" class="form-control"
+                   min="1" required placeholder="How many units each?">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Note <span class="text-muted fw-normal">(optional)</span></label>
+            <textarea name="note" class="form-control" rows="2"
+                      placeholder="Any additional info..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-dark">Submit Bulk Request</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -182,13 +267,109 @@
 <script>
   const requestModal = document.getElementById('requestModal');
   requestModal.addEventListener('show.bs.modal', function(event) {
-      const button = event.relatedTarget;
-      document.getElementById('modalVariantId').value = button.getAttribute('data-variant-id');
-      document.getElementById('modalVariantLabel').textContent =
-          button.getAttribute('data-product-name') + ' — ' +
-          button.getAttribute('data-color') + ' / ' +
-          button.getAttribute('data-size');
+    const button = event.relatedTarget;
+    document.getElementById('modalVariantId').value = button.getAttribute('data-variant-id');
+    document.getElementById('modalVariantLabel').textContent =
+        button.getAttribute('data-product-name') + ' — ' +
+        button.getAttribute('data-color') + ' / ' +
+        button.getAttribute('data-size');
   });
+
+  const tbody = document.querySelector('table tbody');
+
+  function applyStockFilters() {
+    const q = document.getElementById('stockSearch').value.toLowerCase();
+    const color = document.getElementById('colorFilter').value.toLowerCase();
+    const size = document.getElementById('sizeFilter').value.toLowerCase();
+    const sort = document.getElementById('stockSort').value;
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    rows.forEach(row => {
+      const name = (row.dataset.name || '').toLowerCase();
+      const rowColor = (row.dataset.color || '').toLowerCase();
+      const rowSize = (row.dataset.size || '').toLowerCase();
+      const matches = name.includes(q)
+          && (!color || rowColor === color)
+          && (!size || rowSize === size);
+      row.style.display = matches ? '' : 'none';
+    });
+
+    if (sort) {
+      const visible = rows.filter(r => r.style.display !== 'none');
+      visible.sort((a, b) => {
+        const aStock = parseInt(a.dataset.stock) || 0;
+        const bStock = parseInt(b.dataset.stock) || 0;
+        return sort === 'asc' ? aStock - bStock : bStock - aStock;
+      });
+      visible.forEach(row => tbody.appendChild(row));
+    }
+  }
+
+  document.getElementById('stockSearch').addEventListener('input', applyStockFilters);
+  document.getElementById('colorFilter').addEventListener('change', applyStockFilters);
+  document.getElementById('sizeFilter').addEventListener('change', applyStockFilters);
+  document.getElementById('stockSort').addEventListener('change', applyStockFilters);
+
+  function resetFilters() {
+    document.getElementById('stockSearch').value = '';
+    document.getElementById('colorFilter').value = '';
+    document.getElementById('sizeFilter').value = '';
+    document.getElementById('stockSort').value = '';
+    applyStockFilters();
+  }
+
+  const allRows = Array.from(tbody.querySelectorAll('tr'));
+  const colors = [...new Set(allRows.map(r => r.dataset.color).filter(Boolean))].sort();
+  const sizes  = [...new Set(allRows.map(r => r.dataset.size).filter(Boolean))].sort();
+  colors.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    document.getElementById('colorFilter').appendChild(opt);
+  });
+  sizes.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    document.getElementById('sizeFilter').appendChild(opt);
+  });
+
+  function toggleSelectAll() {
+    document.querySelectorAll('.variant-check').forEach(cb => {
+      if (cb.closest('tr').style.display !== 'none') cb.checked = true;
+    });
+    updateBulkBtn();
+  }
+
+  function clearSelection() {
+    document.querySelectorAll('.variant-check').forEach(cb => cb.checked = false);
+    updateBulkBtn();
+  }
+
+  function updateBulkBtn() {
+    const count = document.querySelectorAll('.variant-check:checked').length;
+    document.getElementById('selectedCount').textContent = count;
+    document.getElementById('bulkRequestBtn').disabled = count === 0;
+  }
+
+  document.querySelectorAll('.variant-check').forEach(cb => {
+    cb.addEventListener('change', updateBulkBtn);
+  });
+
+  function openBulkModal() {
+    const checked = Array.from(document.querySelectorAll('.variant-check:checked'));
+    const list = document.getElementById('bulkVariantList');
+    const inputs = document.getElementById('bulkHiddenInputs');
+
+    list.innerHTML = '<strong>' + checked.length + ' variants selected:</strong><br>' +
+        checked.map(cb =>
+            cb.dataset.productName + ' — ' + cb.dataset.color + ' / ' + cb.dataset.size
+        ).join('<br>');
+
+    inputs.innerHTML = checked.map(cb =>
+        '<input type="hidden" name="variantIds" value="' + cb.dataset.variantId + '">'
+    ).join('');
+
+    new bootstrap.Modal(document.getElementById('bulkRequestModal')).show();
+  }
 </script>
 </body>
 </html>
