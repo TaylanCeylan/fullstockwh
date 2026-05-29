@@ -89,6 +89,18 @@ public class StockRequestServiceImpl implements StockRequestService
     }
 
     @Override
+    @Transactional
+    public void bulkApprove(List<Long> requestIds) {
+        requestIds.forEach(this::approveRequest);
+    }
+
+    @Override
+    @Transactional
+    public void bulkReject(List<Long> requestIds) {
+        requestIds.forEach(this::rejectRequest);
+    }
+
+    @Override
     public void createBulkRequest(List<Long> variantIds, Integer quantity, String note, UserEntity manager) {
         variantIds.forEach(variantId -> createRequest(variantId, quantity, note, manager));
     }
