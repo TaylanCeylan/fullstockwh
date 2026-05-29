@@ -123,6 +123,16 @@ public class ManagerController
         return "manager/orders";
     }
 
+    @GetMapping("/orders/{id}")
+    public String orderDetail(@PathVariable Long id, Model model) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        model.addAttribute("order", order);
+        model.addAttribute("shipment", order.getShipment());
+        model.addAttribute("activePage", "orders");
+        return "manager/order-detail";
+    }
+
     @GetMapping("/orders/{id}/ship")
     public String showShipForm(@PathVariable Long id, Model model) {
         Order order = orderRepository.findById(id)

@@ -106,6 +106,8 @@
               </td>
               <td class="text-muted" th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></td>
               <td>
+                <a th:href="@{/manager/orders/{id}(id=${order.id})}"
+                   class="btn btn-sm btn-outline-secondary me-1">Detail</a>
                 <a th:if="${order.status.name() == 'SUCCESS'}"
                    th:href="@{/manager/orders/{id}/ship(id=${order.id})}"
                    class="btn btn-sm btn-dark">Ship Order</a>
