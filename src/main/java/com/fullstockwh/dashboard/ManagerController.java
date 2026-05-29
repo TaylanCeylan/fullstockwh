@@ -233,4 +233,21 @@ public class ManagerController
         }
         return "redirect:/manager/stock";
     }
+
+    @PostMapping("/stock/bulk-request")
+    public String bulkRequestStock(@RequestParam List<Long> variantIds,
+                                   @RequestParam Integer quantity,
+                                   @RequestParam(required = false) String note,
+                                   @AuthenticationPrincipal UserDetails userDetails,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            UserEntity manager = userService.findByEmail(userDetails.getUsername());
+            stockRequestService.createBulkRequest(variantIds, quantity, note, manager);
+            redirectAttributes.addFlashAttribute("success",
+                    variantIds.size() + " variants requested successfully.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/manager/stock";
+    }
 }

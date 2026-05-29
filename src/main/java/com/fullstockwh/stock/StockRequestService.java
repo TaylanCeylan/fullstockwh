@@ -12,4 +12,5 @@ public interface StockRequestService
     List<StockRequest> getRequestsByManager(UserEntity manager);
     List<StockRequest> getAllRequests();
     long getPendingCount();
+    void createBulkRequest(List<Long> variantIds, Integer quantity, String note, UserEntity manager);
 }
