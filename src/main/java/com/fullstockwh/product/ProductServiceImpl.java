@@ -221,6 +221,12 @@ class ProductServiceImpl implements ProductService
                 .totalStockStatus(resolveTotalStockStatus(product.getVariants()))
                 .totalStock(totalStock)
                 .variantCount(product.getVariants() == null ? 0 : product.getVariants().size())
+                .lowStockVariantCount(product.getVariants() == null ? 0 : (int) product.getVariants().stream()
+                        .filter(v -> v.getStockQuantity() > 0 && v.getStockQuantity() < StockThreshold.LOW_STOCK)
+                        .count())
+                .outOfStockVariantCount(product.getVariants() == null ? 0 : (int) product.getVariants().stream()
+                        .filter(v -> v.getStockQuantity() == 0)
+                        .count())
                 .variants(product.getVariants() == null ? Collections.emptyList() :
                         product.getVariants().stream()
                                 .map(variantService::mapToVariantResponse)

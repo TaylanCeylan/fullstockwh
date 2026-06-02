@@ -134,15 +134,23 @@
               <td class="fw-semibold"
                   th:text="${'₺' + #numbers.formatDecimal(p.price, 1, 2)}"></td>
               <td>
-                <span th:if="${p.variantCount == 0}"
-                      class="badge bg-secondary px-3">No Variants</span>
-                      <span th:if="${p.variantCount > 0}"
-                      class="badge px-3"
-                      th:classappend="${p.totalStock == 0 ? 'bg-danger' :
+                <div class="d-flex align-items-center gap-1 flex-wrap">
+                  <span th:if="${p.variantCount == 0}"
+                        class="badge bg-secondary px-3">No Variants</span>
+                  <span th:if="${p.variantCount > 0}"
+                        class="badge px-3"
+                        th:classappend="${p.totalStock == 0 ? 'bg-danger' :
                               (p.totalStock <= lowStockThreshold ? 'bg-warning text-dark' : 'bg-success')}"
-                              th:text="${p.totalStock == 0 ? 'Out of Stock' :
-                              (p.totalStock <= lowStockThreshold ? p.totalStock + ' - Low' : p.totalStock + ' - OK')}">
-                      </span>
+                        th:text="${p.totalStock == 0 ? 'Out of Stock' :
+                       (p.totalStock <= lowStockThreshold ? p.totalStock + ' - Low' : p.totalStock + ' - OK')}">
+                  </span>
+                  <span th:if="${p.outOfStockVariantCount > 0}"
+                        class="badge bg-danger"
+                        th:text="${p.outOfStockVariantCount} + ' Out'"></span>
+                  <span th:if="${p.lowStockVariantCount > 0}"
+                        class="badge bg-warning text-dark"
+                        th:text="${p.lowStockVariantCount} + ' Low'"></span>
+                </div>
               </td>
               <td class="text-end pe-4">
                 <a th:href="@{/manager/stock/{id}(id=${p.id})}"
