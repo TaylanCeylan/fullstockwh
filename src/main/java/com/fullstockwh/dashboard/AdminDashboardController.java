@@ -89,9 +89,29 @@ public class AdminDashboardController
 
         List<Order> recentOrders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 10));
         model.addAttribute("recentOrders", recentOrders);
-        List<ProductVariant> lowStockVariants = variantRepository.findByStockQuantityLessThan(StockThreshold.LOW_STOCK);
+
+        List<ProductVariant> allLowVariants = variantRepository.findByStockQuantityLessThan(StockThreshold.LOW_STOCK);
+
+        List<ProductVariant> outOfStockVariants = allLowVariants.stream()
+                .filter(v -> v.getStockQuantity() == 0)
+                .collect(Collectors.toList());
+
+        List<ProductVariant> lowStockVariants = allLowVariants.stream()
+                .filter(v -> v.getStockQuantity() > 0)
+                .collect(Collectors.toList());
+
+        List<ProductResponse> noVariantProductsList = products.stream()
+                .filter(p -> p.getVariantCount() == 0)
+                .collect(Collectors.toList());
+
+        long noVariantProducts = noVariantProductsList.size();
+
         model.addAttribute("lowStockVariants", lowStockVariants);
+        model.addAttribute("outOfStockVariants", outOfStockVariants);
         model.addAttribute("lowStockCount", lowStockVariants.size());
+        model.addAttribute("outOfStockCount", outOfStockVariants.size());
+        model.addAttribute("noVariantProducts", noVariantProductsList);
+        model.addAttribute("noVariantCount", noVariantProducts);
         model.addAttribute("activePage", "dashboard");
         return "admin/dashboard";
     }
@@ -114,12 +134,31 @@ public class AdminDashboardController
         List<ProductResponse> products = productService.filterProducts(search, gender, categoryId, sortBy, direction, lowStockOnly);
         model.addAttribute("productsList", products);
 
+        List<ProductResponse> allProductsForStats = productService.getAllProducts();
+
+        long lowStockCount = allProductsForStats.stream()
+                .filter(p -> p.getVariantCount() > 0 &&
+                        p.getTotalStock() > 0 &&
+                        p.getTotalStock() <= StockThreshold.PRODUCT_LOW_STOCK)
+                .count();
+
+        long outOfStockCount = allProductsForStats.stream()
+                .filter(p -> p.getVariantCount() > 0 && p.getTotalStock() == 0)
+                .count();
+
+        long noVariantCount = allProductsForStats.stream()
+                .filter(p -> p.getVariantCount() == 0)
+                .count();
+
         model.addAttribute("search", search);
         model.addAttribute("categoryId", categoryId);
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("direction", direction);
         model.addAttribute("lowStockThreshold", StockThreshold.PRODUCT_LOW_STOCK);
         model.addAttribute("lowStockOnly", lowStockOnly);
+        model.addAttribute("lowStockCount", lowStockCount);
+        model.addAttribute("outOfStockCount", outOfStockCount);
+        model.addAttribute("noVariantCount", noVariantCount);
         model.addAttribute("nextDirection", "asc".equals(direction) ? "desc" : "asc");
         return "admin/products";
     }

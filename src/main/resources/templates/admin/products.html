@@ -181,13 +181,24 @@
                     </select>
                 </div>
 
-                <div class="col-md-2">
-                    <div class="form-check form-switch mt-2">
-                        <input class="form-check-input" type="checkbox"
-                               name="lowStockOnly" value="true"
-                               id="lowStockToggle" th:checked="${lowStockOnly}">
-                        <label class="form-check-label small fw-semibold text-danger"
-                               for="lowStockToggle">Low Stock Only</label>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2 mt-2 flex-wrap">
+                            <span class="badge bg-warning text-dark px-2 py-1">
+                            Low: <span th:text="${lowStockCount}">0</span>
+                            </span>
+                                    <span class="badge bg-danger px-2 py-1">
+                                        Out: <span th:text="${outOfStockCount}">0</span>
+                                    </span>
+                                <span class="badge bg-secondary px-2 py-1">
+                                No Variants: <span th:text="${noVariantCount}">0</span>
+                            </span>
+                        <div class="form-check form-switch ms-1">
+                            <input class="form-check-input" type="checkbox"
+                                   name="lowStockOnly" value="true"
+                                   id="lowStockToggle" th:checked="${lowStockOnly}">
+                            <label class="form-check-label small fw-semibold text-danger"
+                                   for="lowStockToggle">Low Only</label>
+                        </div>
                     </div>
                 </div>
 
@@ -254,12 +265,23 @@
                             <td class="fw-bold" th:text="${'₺' + p.price}">₺0.00</td>
 
                             <td>
-                                <span class="badge px-3"
-                                      th:classappend="${p.totalStock == 0 ? 'bg-danger' :
-                                             (p.totalStock <= lowStockThreshold ? 'bg-warning text-dark' : 'bg-success')}"
-                                      th:text="${p.totalStock == 0 ? 'Out of Stock' :
-                                             (p.totalStock <= lowStockThreshold ? p.totalStock + ' - Low' : p.totalStock + ' - OK')}">
-                                </span>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                        <span th:if="${p.variantCount == 0}"
+                                        class="badge bg-secondary px-3">No Variants</span>
+                                    <span th:if="${p.variantCount > 0}"
+                                          class="badge px-3"
+                                          th:classappend="${p.totalStock == 0 ? 'bg-danger' :
+                                            (p.totalStock <= lowStockThreshold ? 'bg-warning text-dark' : 'bg-success')}"
+                                          th:text="${p.totalStock == 0 ? 'Out of Stock' :
+                                            (p.totalStock <= lowStockThreshold ? p.totalStock + ' - Low' : p.totalStock + ' - OK')}">
+                                    </span>
+                                    <span th:if="${p.outOfStockVariantCount > 0}"
+                                          class="badge bg-danger"
+                                          th:text="${p.outOfStockVariantCount} + ' Out'"></span>
+                                    <span th:if="${p.lowStockVariantCount > 0}"
+                                          class="badge bg-warning text-dark"
+                                          th:text="${p.lowStockVariantCount} + ' Low'"></span>
+                                </div>
                             </td>
 
                             <td class="text-center">
