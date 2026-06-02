@@ -50,6 +50,13 @@
             </a>
         </li>
         <li>
+            <a th:href="@{/admin/reports}"
+               class="nav-link text-white"
+               th:classappend="${activePage == 'reports' ? 'active' : ''}">
+                Reports
+            </a>
+        </li>
+        <li>
             <a th:href="@{/admin/reviews}" class="nav-link text-white"
                th:classappend="${activePage == 'reviews' ? 'active' : ''}">
                 Reviews
