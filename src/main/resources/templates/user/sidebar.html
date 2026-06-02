@@ -9,11 +9,6 @@
        style="border-radius: 10px 10px 0 0;">
         <i class="bi bi-person-gear me-2"></i> Account Settings
     </a>
-    <a sec:authorize="hasRole('CUSTOMER')" th:href="@{/user/favourites}"
-       class="list-group-item list-group-item-action p-3 border-0"
-       th:classappend="${activeItem == 'favourites' ? 'active' : ''}">
-        <i class="bi bi-heart me-2"></i> Favourites
-    </a>
     <a sec:authorize="hasRole('CUSTOMER')" th:href="@{/user/addresses}"
        class="list-group-item list-group-item-action p-3 border-0"
        th:classappend="${activeItem == 'addresses' ? 'active' : ''}"

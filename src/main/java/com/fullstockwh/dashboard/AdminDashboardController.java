@@ -42,6 +42,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -698,6 +700,133 @@ public class AdminDashboardController
                 shipmentRepository.findByOrderId(id).orElse(null));
         model.addAttribute("activePage", "orders");
         return "admin/order-detail";
+    }
+
+    @GetMapping("/reports")
+    public String financialReports(
+            @RequestParam(required = false, defaultValue = "all") String period,
+            Model model) {
+
+        List<Order> allOrders = orderRepository.findRecentOrdersWithDetails(
+                org.springframework.data.domain.PageRequest.of(0, 10000));
+
+
+        LocalDateTime startDate = switch (period) {
+            case "month" -> LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+            case "year" -> LocalDateTime.now().withDayOfYear(1).withHour(0).withMinute(0).withSecond(0);
+            default -> LocalDateTime.of(2000, 1, 1, 0, 0);
+        };
+
+        List<Order> filtered = allOrders.stream()
+                .filter(o -> o.getOrderDate().isAfter(startDate))
+                .collect(Collectors.toList());
+
+
+        List<Order> delivered = filtered.stream()
+                .filter(o -> o.getStatus() == com.fullstockwh.order.enums.OrderStatus.DELIVERED)
+                .collect(Collectors.toList());
+
+
+        List<Order> cancelled = filtered.stream()
+                .filter(o -> o.getStatus() == com.fullstockwh.order.enums.OrderStatus.CANCELLED)
+                .collect(Collectors.toList());
+
+
+        BigDecimal totalRevenue = delivered.stream()
+                .map(Order::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal avgOrderValue = delivered.isEmpty() ? BigDecimal.ZERO :
+                totalRevenue.divide(BigDecimal.valueOf(delivered.size()), 2, java.math.RoundingMode.HALF_UP);
+
+        BigDecimal cancelledLoss = cancelled.stream()
+                .map(Order::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal shippingRevenue = delivered.stream()
+                .filter(o -> o.getShipment() != null && o.getShipment().getShippingFee() != null)
+                .map(o -> o.getShipment().getShippingFee())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+        java.util.LinkedHashMap<String, BigDecimal> monthlyRevenue = new java.util.LinkedHashMap<>();
+        for (int i = 5; i >= 0; i--) {
+            LocalDateTime month = LocalDateTime.now().minusMonths(i);
+            String label = month.getMonth().toString().substring(0, 3) + " " + month.getYear();
+            int finalI = i;
+            BigDecimal monthTotal = allOrders.stream()
+                    .filter(o -> o.getStatus() == com.fullstockwh.order.enums.OrderStatus.DELIVERED)
+                    .filter(o -> {
+                        LocalDateTime d = o.getOrderDate();
+                        LocalDateTime target = LocalDateTime.now().minusMonths(finalI);
+                        return d.getMonth() == target.getMonth() && d.getYear() == target.getYear();
+                    })
+                    .map(Order::getTotalPrice)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            monthlyRevenue.put(label, monthTotal);
+        }
+
+
+        java.util.Map<String, Long> productSales = new java.util.HashMap<>();
+        java.util.Map<String, BigDecimal> productRevenue = new java.util.HashMap<>();
+
+        delivered.forEach(o -> {
+            if (o.getItems() != null) {
+                o.getItems().forEach(item -> {
+                    String name = item.getProductVariant().getProduct().getName();
+                    productSales.merge(name, (long) item.getQuantity(), Long::sum);
+                    productRevenue.merge(name,
+                            item.getPriceAtPurchase().multiply(BigDecimal.valueOf(item.getQuantity())),
+                            BigDecimal::add);
+                });
+            }
+        });
+
+        List<java.util.Map.Entry<String, Long>> top5 = productSales.entrySet().stream()
+                .sorted(java.util.Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .collect(Collectors.toList());
+
+        model.addAttribute("period", period);
+        model.addAttribute("totalRevenue", totalRevenue);
+        model.addAttribute("avgOrderValue", avgOrderValue);
+        model.addAttribute("cancelledLoss", cancelledLoss);
+        model.addAttribute("shippingRevenue", shippingRevenue);
+        model.addAttribute("deliveredCount", delivered.size());
+        model.addAttribute("cancelledCount", cancelled.size());
+        model.addAttribute("monthlyLabels", new java.util.ArrayList<>(monthlyRevenue.keySet()));
+        model.addAttribute("monthlyData", new java.util.ArrayList<>(monthlyRevenue.values()));
+        model.addAttribute("top5", top5);
+        model.addAttribute("productRevenue", productRevenue);
+
+        java.util.Map<String, Long> orderStatusDist = filtered.stream()
+                .collect(Collectors.groupingBy(o -> o.getStatus().name(), Collectors.counting()));
+
+
+        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, LocalDateTime.now()) + 1;
+        BigDecimal dailyAvg = daysBetween > 0
+                ? totalRevenue.divide(BigDecimal.valueOf(daysBetween), 2, java.math.RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+
+        java.util.Map<String, BigDecimal> customerRevenue = new java.util.HashMap<>();
+        delivered.forEach(o -> {
+            if (o.getUser() != null) {
+                String name = o.getUser().getFirstName() + " " + o.getUser().getLastName();
+                customerRevenue.merge(name, o.getTotalPrice(), BigDecimal::add);
+            }
+        });
+
+        List<java.util.Map.Entry<String, BigDecimal>> top5Customers = customerRevenue.entrySet().stream()
+                .sorted(java.util.Map.Entry.<String, BigDecimal>comparingByValue().reversed())
+                .limit(5)
+                .collect(Collectors.toList());
+
+        model.addAttribute("orderStatusDist", orderStatusDist);
+        model.addAttribute("dailyAvg", dailyAvg);
+        model.addAttribute("top5Customers", top5Customers);
+        model.addAttribute("activePage", "reports");
+        return "admin/reports";
     }
 
     @GetMapping("/reviews")
