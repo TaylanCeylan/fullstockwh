@@ -40,9 +40,15 @@
             </div>
             <div class="col-md-4">
                 <div class="card shadow-sm p-4">
-                    <div class="text-muted small mb-1">Low Stock Variants</div>
-                    <div class="fs-2 fw-bold" th:text="${lowStockCount}">0</div>
-                    <a th:href="@{/manager/stock(lowStockOnly=true)}" class="btn btn-sm btn-warning mt-3">View</a>
+                    <div class="text-warning small mb-1 fw-semibold">Low Stock Products</div>
+                    <div class="fs-2 fw-bold text-warning" th:text="${lowStockProducts}">0</div>
+                    <div class="text-danger small mt-2">
+                        <span th:text="${outOfStockProducts}"></span> out of stock
+                        <span th:if="${noVariantProducts > 0}" class="ms-2 text-secondary">
+                · <span th:text="${noVariantProducts}"></span> no variants
+            </span>
+                    </div>
+                    <a th:href="@{/manager/stock}" class="btn btn-sm btn-warning mt-3">View</a>
                 </div>
             </div>
         </div>

@@ -220,6 +220,7 @@ class ProductServiceImpl implements ProductService
                 .gender(product.getCategory().getTargetGender().name())
                 .totalStockStatus(resolveTotalStockStatus(product.getVariants()))
                 .totalStock(totalStock)
+                .variantCount(product.getVariants() == null ? 0 : product.getVariants().size())
                 .variants(product.getVariants() == null ? Collections.emptyList() :
                         product.getVariants().stream()
                                 .map(variantService::mapToVariantResponse)

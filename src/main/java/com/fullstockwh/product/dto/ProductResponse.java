@@ -24,6 +24,7 @@ public class ProductResponse
     private List<VariantResponse> variants;
     private String totalStockStatus;
     private int totalStock;
+    private int variantCount;
 
     private List<String> imageUrls;
 

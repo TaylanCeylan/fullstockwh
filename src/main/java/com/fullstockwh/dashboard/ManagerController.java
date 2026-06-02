@@ -59,7 +59,21 @@ public class ManagerController
                 .filter(o -> o.getStatus() == OrderStatus.SHIPPED)
                 .count();
 
-        int lowStockCount = variantRepository.findByStockQuantityLessThan(StockThreshold.LOW_STOCK).size();
+        List<ProductResponse> allProducts = productService.getAllProducts();
+
+        long lowStockProducts = allProducts.stream()
+                .filter(p -> p.getVariantCount() > 0 &&
+                        p.getTotalStock() > 0 &&
+                        p.getTotalStock() <= StockThreshold.PRODUCT_LOW_STOCK)
+                .count();
+
+        long outOfStockProducts = allProducts.stream()
+                .filter(p -> p.getVariantCount() > 0 && p.getTotalStock() == 0)
+                .count();
+
+        long noVariantProducts = allProducts.stream()
+                .filter(p -> p.getVariantCount() == 0)
+                .count();
 
         long pendingStockRequests = stockRequestService.getPendingCount();
         List<Shipment> overdueShipments = shipmentRepository.findOverdueShipments(LocalDateTime.now());
@@ -68,7 +82,9 @@ public class ManagerController
 
         model.addAttribute("pendingOrders", pendingOrders);
         model.addAttribute("shippedOrders", shippedOrders);
-        model.addAttribute("lowStockCount", lowStockCount);
+        model.addAttribute("lowStockProducts", lowStockProducts);
+        model.addAttribute("outOfStockProducts", outOfStockProducts);
+        model.addAttribute("noVariantProducts", noVariantProducts);
         model.addAttribute("products", products);
         List<Order> recentOrders = allOrders.stream().limit(10).collect(Collectors.toList());
         model.addAttribute("recentOrders", recentOrders);
@@ -206,7 +222,7 @@ public class ManagerController
     @GetMapping("/stock")
     public String stock(
             @RequestParam(required = false, defaultValue = "") String search,
-            @RequestParam(required = false, defaultValue = "false") boolean lowStockOnly,
+            @RequestParam(required = false, defaultValue = "") String stockFilter,
             @AuthenticationPrincipal UserDetails userDetails,
             Model model) {
 
@@ -222,9 +238,19 @@ public class ManagerController
                     .collect(Collectors.toList());
         }
 
-        if (lowStockOnly) {
+        if ("low".equals(stockFilter)) {
             products = products.stream()
-                    .filter(p -> p.getTotalStock() <= StockThreshold.PRODUCT_LOW_STOCK)
+                    .filter(p -> p.getVariantCount() > 0 &&
+                            p.getTotalStock() > 0 &&
+                            p.getTotalStock() <= StockThreshold.PRODUCT_LOW_STOCK)
+                    .collect(Collectors.toList());
+        } else if ("out".equals(stockFilter)) {
+            products = products.stream()
+                    .filter(p -> p.getVariantCount() > 0 && p.getTotalStock() == 0)
+                    .collect(Collectors.toList());
+        } else if ("novariant".equals(stockFilter)) {
+            products = products.stream()
+                    .filter(p -> p.getVariantCount() == 0)
                     .collect(Collectors.toList());
         }
 
@@ -232,7 +258,7 @@ public class ManagerController
 
         model.addAttribute("products", products);
         model.addAttribute("search", search);
-        model.addAttribute("lowStockOnly", lowStockOnly);
+        model.addAttribute("stockFilter", stockFilter);
         model.addAttribute("lowStockThreshold", StockThreshold.PRODUCT_LOW_STOCK);
         model.addAttribute("myRequests", stockRequestService.getRequestsByManager(manager));
         model.addAttribute("activePage", "stock");
