@@ -3,9 +3,7 @@
 <body>
 
 <div th:fragment="adminSidebar" class="d-flex flex-column flex-shrink-0 p-3 text-white sidebar">
-    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
-        <span class="fs-4 fw-bold">Admin Dashboard</span>
-    </a>
+    <span class="fs-4 fw-bold text-white">Admin Dashboard</span>
     <hr>
 
     <ul class="nav nav-pills flex-column mb-auto">
@@ -39,11 +37,39 @@
                 Shipments
             </a>
         </li>
+        <li>
+            <a th:href="@{/admin/stock-requests}" class="nav-link text-white"
+               th:classappend="${activePage == 'stockRequests' ? 'active' : ''}">
+                Stock Requests
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/users}" class="nav-link text-white"
+               th:classappend="${activePage == 'users' ? 'active' : ''}">
+                Users
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/reports}"
+               class="nav-link text-white"
+               th:classappend="${activePage == 'reports' ? 'active' : ''}">
+                Reports
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/reviews}" class="nav-link text-white"
+               th:classappend="${activePage == 'reviews' ? 'active' : ''}">
+                Reviews
+            </a>
+        </li>
     </ul>
 
     <hr>
 
     <div class="dropdown">
+        <a th:href="@{/}" class="btn btn-outline-light w-100 text-start mb-2">
+            <strong>← Home Page</strong>
+        </a>
         <form th:action="@{/logout}" method="post">
             <button type="submit" class="btn btn-danger w-100 text-start">
                 <strong>Logout</strong>

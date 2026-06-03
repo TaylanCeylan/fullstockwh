@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Manager Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7f6; }
+        .sidebar { width: 280px; height: 100vh; position: fixed; left: 0; top: 0; background-color: #343a40; z-index: 1000; }
+        .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+        .card { border: none; border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{manager/sidebar :: managerSidebar}"></div>
+
+<div class="main-content">
+    <div class="container-fluid" style="max-width:1300px;">
+
+        <h3 class="fw-bold mb-4">Dashboard</h3>
+
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card shadow-sm p-4">
+                    <div class="text-muted small mb-1">Pending Orders</div>
+                    <div class="fs-2 fw-bold" th:text="${pendingOrders}">0</div>
+                    <a th:href="@{/manager/orders(status='SUCCESS')}" class="btn btn-sm btn-dark mt-3">View</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm p-4">
+                    <div class="text-muted small mb-1">Orders In Transit</div>
+                    <div class="fs-2 fw-bold" th:text="${shippedOrders}">0</div>
+                    <a th:href="@{/manager/orders(status='SHIPPED')}" class="btn btn-sm btn-dark mt-3">View</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm p-4">
+                    <div class="text-warning small mb-1 fw-semibold">Low Stock Products</div>
+                    <div class="fs-2 fw-bold text-warning" th:text="${lowStockProducts}">0</div>
+                    <div class="text-danger small mt-2">
+                        <span th:text="${outOfStockProducts}"></span> out of stock
+                        <span th:if="${noVariantProducts > 0}" class="ms-2 text-secondary">
+                · <span th:text="${noVariantProducts}"></span> no variants
+            </span>
+                    </div>
+                    <a th:href="@{/manager/stock}" class="btn btn-sm btn-warning mt-3">View</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="card shadow-sm p-4">
+                    <div class="text-muted small mb-1">Pending Stock Requests</div>
+                    <div class="fs-2 fw-bold" th:text="${pendingStockRequests}">0</div>
+                    <a th:href="@{/manager/stock}" class="btn btn-sm btn-secondary mt-3">View</a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm p-4 border-danger">
+                    <div class="text-danger small mb-1 fw-semibold">Overdue Shipments</div>
+                    <div class="fs-2 fw-bold text-danger" th:text="${overdueShipmentsCount}">0</div>
+                    <a th:href="@{/manager/shipments}" class="btn btn-sm btn-danger mt-3">View</a>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold mb-3">Order Trend (Last 7 Days)</h5>
+        <div class="card shadow-sm p-4 mb-5">
+            <canvas id="orderChart" height="80"></canvas>
+        </div>
+
+        <h5 class="fw-bold mb-3">Recent Orders</h5>
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">#</th>
+                        <th>Customer</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="order : ${recentOrders}">
+                        <td class="ps-4 fw-semibold text-muted" th:text="'#' + ${order.id}"></td>
+                        <td th:text="${order.user != null ? order.user.firstName + ' ' + order.user.lastName : 'Guest'}"></td>
+                        <td th:text="${#numbers.formatDecimal(order.totalPrice, 1, 2) + '₺'}"></td>
+                        <td>
+                            <span th:switch="${order.status.name()}">
+                                <span th:case="'SUCCESS'" class="badge bg-success">Confirmed</span>
+                                <span th:case="'PENDING'" class="badge bg-warning text-dark">Pending</span>
+                                <span th:case="'SHIPPED'" class="badge bg-primary">Shipped</span>
+                                <span th:case="'DELIVERED'" class="badge bg-info text-dark">Delivered</span>
+                                <span th:case="'CANCELLED'" class="badge bg-secondary">Cancelled</span>
+                            </span>
+                        </td>
+                        <td th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></td>
+                        <td>
+                            <a th:if="${order.status.name() == 'SUCCESS'}"
+                               th:href="@{/manager/orders/{id}/ship(id=${order.id})}"
+                               class="btn btn-sm btn-dark">Ship</a>
+                            <form th:if="${order.status.name() == 'SHIPPED'}"
+                                  th:action="@{/manager/orders/{id}/deliver(id=${order.id})}"
+                                  method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success">Deliver</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script th:inline="javascript">
+    const orderDates = /*[[${orderDates}]]*/ [];
+
+    const last7 = [...Array(7)].map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return d.toISOString().split('T')[0];
+    });
+
+    const counts = last7.map(day =>
+    orderDates.filter(date => date === day).length
+    );
+
+    new Chart(document.getElementById('orderChart'), {
+        type: 'bar',
+        data: {
+            labels: last7.map(d => d.substring(5)),
+            datasets: [{
+                label: 'Orders',
+                data: counts,
+                backgroundColor: 'rgba(52,58,64,0.75)',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+</script>
+</body>
+</html>

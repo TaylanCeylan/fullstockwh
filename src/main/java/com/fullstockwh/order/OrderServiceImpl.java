@@ -8,6 +8,9 @@ import com.fullstockwh.order.dto.OrderItemResponse;
 import com.fullstockwh.order.dto.OrderResponse;
 import com.fullstockwh.order.enums.OrderStatus;
 import com.fullstockwh.order.order_item.OrderItem;
+import com.fullstockwh.shipment.Shipment;
+import com.fullstockwh.shipment.ShipmentRepository;
+import com.fullstockwh.shipment.enums.ShipmentStatus;
 import com.fullstockwh.product.product_variant.ProductVariant;
 import com.fullstockwh.product.product_variant.VariantRepository;
 import com.fullstockwh.user.UserEntity;
@@ -21,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,7 @@ public class OrderServiceImpl implements OrderService
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final VariantRepository variantRepository;
+    private final ShipmentRepository shipmentRepository;
     private final AddressRepository addressRepository;
 
     @Override
@@ -98,6 +103,75 @@ public class OrderServiceImpl implements OrderService
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional
+    public void cancelOrder(Long orderId, UserEntity user) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (!order.getUser().getId().equals(user.getId()))
+            throw new RuntimeException("Unauthorized");
+
+        if (order.getStatus() != OrderStatus.SUCCESS)
+            throw new RuntimeException("Only confirmed orders can be cancelled");
+
+        if (order.getOrderDate().isBefore(LocalDateTime.now().minusMinutes(30)))
+            throw new RuntimeException("Cancellation period has expired (30 minutes)");
+
+        restoreStockAndCancel(order);
+    }
+
+    @Override
+    @Transactional
+    public void adminCancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (order.getStatus() == OrderStatus.DELIVERED ||
+                order.getStatus() == OrderStatus.CANCELLED)
+            throw new RuntimeException("This order cannot be cancelled");
+
+        restoreStockAndCancel(order);
+    }
+
+    private void restoreStockAndCancel(Order order) {
+        for (OrderItem item : order.getItems()) {
+            ProductVariant variant = item.getProductVariant();
+            variant.setStockQuantity(variant.getStockQuantity() + item.getQuantity());
+            variantRepository.save(variant);
+        }
+
+        shipmentRepository.findByOrderId(order.getId()).ifPresent(shipment -> {
+            shipment.setStatus(ShipmentStatus.CANCELLED);
+            shipmentRepository.save(shipment);
+        });
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelledAt(LocalDateTime.now());
+        orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void shipOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        if (order.getStatus() != OrderStatus.SUCCESS)
+            throw new RuntimeException("Only confirmed orders can be shipped");
+        order.setStatus(OrderStatus.SHIPPED);
+        orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public void deliverOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        if (order.getStatus() != OrderStatus.SHIPPED)
+            throw new RuntimeException("Only shipped orders can be marked as delivered");
+        order.setStatus(OrderStatus.DELIVERED);
+        orderRepository.save(order);
+    }
+
     private OrderResponse mapToResponse(Order order) {
         List<OrderItemResponse> itemResponses = order.getItems().stream()
                 .map(item -> OrderItemResponse.builder()
@@ -126,6 +200,7 @@ public class OrderServiceImpl implements OrderService
                 .orderDate (order.getOrderDate())
                 .shippingAddress(shippingAddr)
                 .items (itemResponses)
+                .cancelledAt (order.getCancelledAt())
                 .build();
     }
 }

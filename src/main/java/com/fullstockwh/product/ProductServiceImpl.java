@@ -2,12 +2,14 @@ package com.fullstockwh.product;
 
 
 import com.fullstockwh.category.enums.TargetGender;
+import com.fullstockwh.common.StockThreshold;
 import com.fullstockwh.product.dto.ProductCreateRequest;
 import com.fullstockwh.product.dto.ProductUpdateRequest;
 import com.fullstockwh.product.dto.ProductResponse;
 import com.fullstockwh.category.Category;
 import com.fullstockwh.category.CategoryRepository;
 import com.fullstockwh.product.product_variant.VariantService;
+import com.fullstockwh.product.ProductImage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ class ProductServiceImpl implements ProductService
     private final CategoryRepository categoryRepository;
     private final VariantService variantService;
     private final VariantRepository variantRepository;
+    private final ProductImageRepository productImageRepository;
 
     @Override
     @Transactional
@@ -149,7 +152,7 @@ class ProductServiceImpl implements ProductService
 
         return results.stream()
                 .map(this::mapToResponse)
-                .filter(p -> !lowStockOnly || p.getTotalStock() <= 10)
+                .filter(p -> !lowStockOnly || p.getTotalStock() <= StockThreshold.PRODUCT_LOW_STOCK)
                 .collect(Collectors.toList());
     }
 
@@ -172,8 +175,8 @@ class ProductServiceImpl implements ProductService
         int total = variants.stream()
                 .mapToInt(ProductVariant::getStockQuantity)
                 .sum();
-        if (total > 10) return "IN_STOCK";
-        if (total > 0)  return "LOW_STOCK";
+        if (total > StockThreshold.PRODUCT_LOW_STOCK) return "IN_STOCK";
+        if (total > 0) return "LOW_STOCK";
         return "OUT_OF_STOCK";
     }
 
@@ -217,10 +220,23 @@ class ProductServiceImpl implements ProductService
                 .gender(product.getCategory().getTargetGender().name())
                 .totalStockStatus(resolveTotalStockStatus(product.getVariants()))
                 .totalStock(totalStock)
+                .variantCount(product.getVariants() == null ? 0 : product.getVariants().size())
+                .lowStockVariantCount(product.getVariants() == null ? 0 : (int) product.getVariants().stream()
+                        .filter(v -> v.getStockQuantity() > 0 && v.getStockQuantity() < StockThreshold.LOW_STOCK)
+                        .count())
+                .outOfStockVariantCount(product.getVariants() == null ? 0 : (int) product.getVariants().stream()
+                        .filter(v -> v.getStockQuantity() == 0)
+                        .count())
                 .variants(product.getVariants() == null ? Collections.emptyList() :
                         product.getVariants().stream()
                                 .map(variantService::mapToVariantResponse)
                                 .collect(Collectors.toList()))
+
+                .imageUrls(productImageRepository
+                        .findByProductIdOrderByDisplayOrderAsc(product.getId())
+                        .stream()
+                        .map(ProductImage::getImageUrl)
+                        .collect(Collectors.toList()))
 
                 .build();
     }

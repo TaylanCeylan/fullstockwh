@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Manager - Stock</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f7f6; }
+    .sidebar { width: 280px; height: 100vh; position: fixed; left: 0; top: 0; background-color: #343a40; z-index: 1000; }
+    .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+    .card { border: none; border-radius: 12px; }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{manager/sidebar :: managerSidebar}"></div>
+
+<div class="main-content">
+  <div class="container-fluid" style="max-width:1300px;">
+
+    <h3 class="fw-bold mb-4">Stock Management</h3>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+           style="cursor:pointer;" onclick="toggleMyRequests()">
+        <h5 class="fw-bold mb-0">My Stock Requests</h5>
+        <span id="toggleIcon">v</span>
+      </div>
+      <div id="myRequestsBody" class="card-body p-0">
+        <div th:if="${myRequests == null or #lists.isEmpty(myRequests)}"
+             class="text-center text-muted py-4">No requests yet.</div>
+        <div th:if="${myRequests != null and not #lists.isEmpty(myRequests)}"
+             class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+            <tr>
+              <th class="ps-4">Product</th>
+              <th>Variant</th>
+              <th>Qty</th>
+              <th>Note</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="req : ${myRequests}">
+              <td class="ps-4 fw-semibold" th:text="${req.variant.product.name}"></td>
+              <td th:text="${req.variant.color} + ' / ' + ${req.variant.size}"></td>
+              <td th:text="${req.requestedQuantity}"></td>
+              <td class="text-muted small" th:text="${req.note != null ? req.note : '-'}"></td>
+              <td>
+                <span th:switch="${req.status.name()}">
+                  <span th:case="'PENDING'"  class="badge bg-warning text-dark">Pending</span>
+                  <span th:case="'APPROVED'" class="badge bg-success">Approved</span>
+                  <span th:case="'REJECTED'" class="badge bg-danger">Rejected</span>
+                </span>
+              </td>
+              <td class="text-muted small"
+                  th:text="${#temporals.format(req.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}"   class="alert alert-danger"  th:text="${error}"></div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body py-3">
+        <form th:action="@{/manager/stock}" method="get" class="row g-3 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Search</label>
+            <input type="text" name="search" class="form-control"
+                   placeholder="Product name or category..." th:value="${search}">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Stock Status</label>
+            <div class="d-flex gap-2">
+              <a th:href="@{/manager/stock(stockFilter='low')}"
+                 th:classappend="${stockFilter == 'low'} ? 'btn btn-warning btn-sm' : 'btn btn-outline-warning btn-sm'">
+                Low Stock
+              </a>
+              <a th:href="@{/manager/stock(stockFilter='out')}"
+                 th:classappend="${stockFilter == 'out'} ? 'btn btn-danger btn-sm' : 'btn btn-outline-danger btn-sm'">
+                Out of Stock
+              </a>
+              <a th:href="@{/manager/stock(stockFilter='novariant')}"
+                 th:classappend="${stockFilter == 'novariant'} ? 'btn btn-secondary btn-sm' : 'btn btn-outline-secondary btn-sm'">
+                No Variants
+              </a>
+              <a th:href="@{/manager/stock}"
+                 th:classappend="${stockFilter == null or stockFilter == ''} ? 'btn btn-dark btn-sm' : 'btn btn-outline-dark btn-sm'">
+                All
+              </a>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-dark w-100">Filter</button>
+          </div>
+          <div class="col-md-2">
+            <a th:href="@{/manager/stock}" class="btn btn-outline-secondary w-100">Reset</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">Products</h5>
+        <span class="badge bg-dark px-3"
+              th:text="${products.size()} + ' products'"></span>
+      </div>
+      <div class="card-body p-0">
+        <div th:if="${products == null or #lists.isEmpty(products)}"
+             class="text-center text-muted py-5">No products found.</div>
+        <div th:if="${products != null and not #lists.isEmpty(products)}"
+             class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+            <tr>
+              <th class="ps-4">Product</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Total Stock</th>
+              <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${products}">
+              <td class="ps-4 fw-semibold" th:text="${p.name}"></td>
+              <td class="text-muted small" th:text="${p.categoryName}"></td>
+              <td class="fw-semibold"
+                  th:text="${'₺' + #numbers.formatDecimal(p.price, 1, 2)}"></td>
+              <td>
+                <div class="d-flex align-items-center gap-1 flex-wrap">
+                  <span th:if="${p.variantCount == 0}"
+                        class="badge bg-secondary px-3">No Variants</span>
+                  <span th:if="${p.variantCount > 0}"
+                        class="badge px-3"
+                        th:classappend="${p.totalStock == 0 ? 'bg-danger' :
+                              (p.totalStock <= lowStockThreshold ? 'bg-warning text-dark' : 'bg-success')}"
+                        th:text="${p.totalStock == 0 ? 'Out of Stock' :
+                       (p.totalStock <= lowStockThreshold ? p.totalStock + ' - Low' : p.totalStock + ' - OK')}">
+                  </span>
+                  <span th:if="${p.outOfStockVariantCount > 0}"
+                        class="badge bg-danger"
+                        th:text="${p.outOfStockVariantCount} + ' Out'"></span>
+                  <span th:if="${p.lowStockVariantCount > 0}"
+                        class="badge bg-warning text-dark"
+                        th:text="${p.lowStockVariantCount} + ' Low'"></span>
+                </div>
+              </td>
+              <td class="text-end pe-4">
+                <a th:href="@{/manager/stock/{id}(id=${p.id})}"
+                   class="btn btn-sm btn-outline-dark">View Variants -></a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function toggleMyRequests() {
+    const body = document.getElementById('myRequestsBody');
+    const icon = document.getElementById('toggleIcon');
+    if (body.style.display === 'none') {
+      body.style.display = '';
+      icon.textContent = 'v';
+    } else {
+      body.style.display = 'none';
+      icon.textContent = '>';
+    }
+  }
+</script>
+</body>
+</html>

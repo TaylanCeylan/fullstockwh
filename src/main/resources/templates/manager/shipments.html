@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Manager - Shipments</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f7f6; }
+    .sidebar { width: 280px; height: 100vh; position: fixed; left: 0; top: 0; background-color: #343a40; z-index: 1000; }
+    .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+    .card { border: none; border-radius: 12px; }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{manager/sidebar :: managerSidebar}"></div>
+
+<div class="main-content">
+  <div class="container-fluid" style="max-width:1300px;">
+
+    <h3 class="fw-bold mb-4">Shipments</h3>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body py-3">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Search</label>
+            <input type="text" id="shipmentSearch" class="form-control"
+                   placeholder="Tracking no, customer, carrier...">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Status</label>
+            <select id="statusFilter" class="form-select" onchange="applyFilters()">
+              <option value="">All</option>
+              <option value="SHIPPED">Shipped</option>
+              <option value="DELIVERED">Delivered</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Sort by</label>
+            <select id="sortSelect" class="form-select">
+              <option value="default">Default</option>
+              <option value="date-asc">Est. Delivery ↑</option>
+              <option value="date-desc">Est. Delivery ↓</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="overdueCheck"
+                     th:checked="${overdueOnly}"
+                     onchange="window.location.href='/manager/shipments?overdueOnly=' + this.checked">
+              <label class="form-check-label fw-semibold text-danger" for="overdueCheck">
+                 Overdue only
+              </label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <a href="/manager/shipments" class="btn btn-outline-secondary w-100">Reset</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body p-0">
+        <div th:if="${shipments == null or #lists.isEmpty(shipments)}" class="text-center text-muted py-5">
+          No shipments found.
+        </div>
+        <div th:if="${shipments != null and not #lists.isEmpty(shipments)}" class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+            <tr>
+              <th class="ps-4">Tracking</th>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Carrier</th>
+              <th>Status</th>
+              <th>Shipped At</th>
+              <th>Est. Delivery</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="shipmentsBody">
+            <tr th:each="shipment : ${shipments}"
+                th:classappend="${overdueIds != null and overdueIds.contains(shipment.id)} ? 'table-danger' : ''"
+                th:attr="data-tracking=${shipment.trackingNumber},
+             data-customer=${shipment.order.user != null ? shipment.order.user.firstName + ' ' + shipment.order.user.lastName : ''},
+             data-carrier=${shipment.carrierName},
+             data-status=${shipment.status.name()},
+             data-delivery=${shipment.estimatedDelivery != null ? #temporals.format(shipment.estimatedDelivery, 'yyyy-MM-dd') : '9999-99-99'}">
+              <td class="ps-4 fw-semibold" th:text="${shipment.trackingNumber}"></td>
+              <td th:text="'#' + ${shipment.order.id}"></td>
+              <td th:text="${shipment.order.user != null ? shipment.order.user.firstName + ' ' + shipment.order.user.lastName : '-'}"></td>
+              <td th:text="${shipment.carrierName}"></td>
+              <td>
+                                <span th:switch="${shipment.status.name()}">
+                                <span th:case="'SHIPPED'" class="badge bg-primary">Shipped</span>
+                                <span th:case="'DELIVERED'" class="badge bg-success">Delivered</span>
+                                <span th:case="*" class="badge bg-secondary" th:text="${shipment.status}"></span>
+                                </span>
+              </td>
+              <td class="text-muted small" th:text="${shipment.shippedAt != null ? #temporals.format(shipment.shippedAt, 'dd.MM.yyyy') : '-'}"></td>
+              <td th:text="${shipment.estimatedDelivery != null ? #temporals.format(shipment.estimatedDelivery, 'dd.MM.yyyy') : '-'}"></td>
+              <td>
+                <a th:href="@{/orders/{id}/track(id=${shipment.order.id})}"
+                   class="btn btn-sm btn-outline-secondary" target="_blank">
+                  View Tracking
+                </a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const searchInput = document.getElementById('shipmentSearch');
+  const sortSelect = document.getElementById('sortSelect');
+
+  function applyFilters() {
+    const q = searchInput.value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const tbody = document.getElementById('shipmentsBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    rows.forEach(row => {
+      const statusMatch = !statusFilter || row.dataset.status === statusFilter;
+      const text = [
+        row.dataset.tracking,
+        row.dataset.customer,
+        row.dataset.carrier,
+        row.dataset.status
+      ].join(' ').toLowerCase();
+      row.style.display = (text.includes(q) && statusMatch) ? '' : 'none';
+    });
+
+    const visible = rows.filter(r => r.style.display !== 'none');
+    const sort = sortSelect.value;
+
+    visible.sort((a, b) => {
+      if (sort === 'date-asc') return a.dataset.delivery.localeCompare(b.dataset.delivery);
+      if (sort === 'date-desc') return b.dataset.delivery.localeCompare(a.dataset.delivery);
+      if (sort === 'status') return a.dataset.status.localeCompare(b.dataset.status);
+      return 0;
+    });
+
+    visible.forEach(row => tbody.appendChild(row));
+  }
+
+  searchInput.addEventListener('input', applyFilters);
+  sortSelect.addEventListener('change', applyFilters);
+  applyFilters();
+</script>
+</body>
+</html>

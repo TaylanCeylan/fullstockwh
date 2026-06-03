@@ -26,6 +26,7 @@ class EmailServiceImpl implements EmailService
 
         mailSender.send(message);
     }
+
     @Override
     public void sendShippingConfirmationEmail(String email,
                                               String trackingNumber,

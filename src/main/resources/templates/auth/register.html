@@ -20,6 +20,22 @@
           <form th:action="@{/register}" th:object="${user}" method="post">
 
             <div class="mb-3">
+              <label class="form-label text-muted small">First Name</label>
+              <input type="text" class="form-control form-control-lg fs-6" th:field="*{firstName}" placeholder="Name" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label text-muted small">Last Name</label>
+              <input type="text" class="form-control form-control-lg fs-6" th:field="*{lastName}" placeholder="Lastname" required>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label text-muted small">Birth Date <span class="text-muted">(optional)</span></label>
+              <input type="date" class="form-control form-control-lg fs-6" th:field="*{birthDate}"
+                     min="1900-01-01" max="2010-12-31">
+            </div>
+
+            <div class="mb-3">
               <label for="email" class="form-label text-muted small">Email Address</label>
               <input type="email" class="form-control form-control-lg fs-6" th:field="*{email}" placeholder="example@mail.com" required>
             </div>

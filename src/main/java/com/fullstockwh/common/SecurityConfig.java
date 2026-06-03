@@ -22,6 +22,7 @@ public class SecurityConfig
 {
     private final MyUserDetailsService userDetailsService;
     private final CustomSuccessHandler customSuccessHandler;
+    private final CustomAuthFailureHandler customAuthFailureHandler;
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder()
@@ -41,17 +42,20 @@ public class SecurityConfig
                         .requestMatchers("/api/products/**", "/api/categories/**", "/api/reviews/**").authenticated()
                         .requestMatchers("/user/**").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/user/**").hasAnyRole("ADMIN", "MANAGER", "USER")
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/product/**").permitAll()
-                        .requestMatchers("/cart/**").authenticated()
-                        .requestMatchers("/checkout/**").authenticated()
+                        .requestMatchers("/cart/**").hasRole("CUSTOMER")
+                        .requestMatchers("/checkout/**").hasRole("CUSTOMER")
                         .requestMatchers("/orders").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
                         .successHandler(customSuccessHandler)
+                        .failureHandler(customAuthFailureHandler)
                         .permitAll());
 
         return http.build();

@@ -163,6 +163,8 @@ class ShipmentServiceImpl implements ShipmentService
                 .orderStatus(order.getStatus())
                 .shippingFee(shipment.getShippingFee())
                 .distanceKm(shipment.getDistanceKm())
+                .destinationLat(shipment.getDestinationLat())
+                .destinationLon(shipment.getDestinationLon())
                 .destinationCity(address != null ? address.getCity() : "-")
                 .destinationDistrict(address != null ? address.getDistrict() : "-")
                 .orderedAt(order.getOrderDate())
@@ -221,6 +223,12 @@ class ShipmentServiceImpl implements ShipmentService
                 .carbonFootprintKg(s.getCarbonFootprintKg())
                 .build();
     }
+
+    @Override
+    public List<Shipment> getAllShipments() {
+        return shipmentRepository.findAll();
+    }
+
     private double calculateCarbonFootprint(double distanceKm, List<OrderItem> items)
     {
         double totalWeightKg = items.stream()

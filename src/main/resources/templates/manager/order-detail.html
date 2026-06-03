@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Order Detail - Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f7f6; }
+    .sidebar { width: 280px; height: 100vh; position: fixed; left: 0; top: 0; background-color: #343a40; z-index: 1000; }
+    .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+    .card { border: none; border-radius: 12px; }
+    .timeline { position: relative; padding-left: 32px; }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 6px;
+        bottom: 6px;
+        width: 2px;
+        background: #dee2e6;
+    }
+    .timeline-item { position: relative; margin-bottom: 24px; }
+    .timeline-item:last-child { margin-bottom: 0; }
+    .timeline-dot {
+        position: absolute;
+        left: -27px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid #dee2e6;
+        background: #fff;
+    }
+    .timeline-dot.done { background: #198754; border-color: #198754; }
+    .timeline-dot.active { background: #0d6efd; border-color: #0d6efd; }
+    .timeline-dot.cancelled { background: #6c757d; border-color: #6c757d; }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{manager/sidebar :: managerSidebar}"></div>
+
+<div class="main-content">
+  <div class="container-fluid" style="max-width:1100px;">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a th:href="@{/manager/orders}" class="btn btn-outline-secondary btn-sm">← Back</a>
+      <h3 class="fw-bold mb-0">Order #<span th:text="${order.id}"></span></h3>
+      <span th:switch="${order.status.name()}">
+                <span th:case="'SUCCESS'" class="badge bg-success fs-6">Confirmed</span>
+                <span th:case="'PENDING'" class="badge bg-warning text-dark fs-6">Pending</span>
+                <span th:case="'SHIPPED'" class="badge bg-primary fs-6">Shipped</span>
+                <span th:case="'DELIVERED'" class="badge bg-info text-dark fs-6">Delivered</span>
+                <span th:case="'CANCELLED'" class="badge bg-secondary fs-6">Cancelled</span>
+            </span>
+
+      <div class="ms-auto d-flex gap-2">
+        <a th:if="${order.status.name() == 'SUCCESS'}"
+           th:href="@{/manager/orders/{id}/ship(id=${order.id})}"
+           class="btn btn-dark btn-sm">Ship Order</a>
+        <form th:if="${order.status.name() == 'SHIPPED'}"
+              th:action="@{/manager/orders/{id}/deliver(id=${order.id})}"
+              method="post" class="d-inline">
+          <button type="submit" class="btn btn-success btn-sm">Mark Delivered</button>
+        </form>
+      </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}"   class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="row g-4">
+
+      <div class="col-md-8">
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-body p-0">
+            <div class="px-4 py-3 border-bottom">
+              <h5 class="fw-bold mb-0">Order Items</h5>
+            </div>
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+              <tr>
+                <th class="ps-4">Product</th>
+                <th>Color / Size</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Subtotal</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="item : ${order.items}">
+                <td class="ps-4 fw-semibold"
+                    th:text="${item.productVariant.product.name}"></td>
+                <td class="text-muted small">
+                  <span th:text="${item.productVariant.color}"></span> /
+                  <span th:text="${item.productVariant.size}"></span>
+                </td>
+                <td th:text="${item.quantity}"></td>
+                <td th:text="${'₺' + #numbers.formatDecimal(item.priceAtPurchase, 1, 2)}"></td>
+                <td class="fw-bold"
+                    th:text="${'₺' + #numbers.formatDecimal(item.priceAtPurchase.multiply(new java.math.BigDecimal(item.quantity)), 1, 2)}"></td>
+              </tr>
+              </tbody>
+              <tfoot class="table-light">
+              <tr>
+                <td colspan="4" class="ps-4 fw-bold text-end">Total</td>
+                <td class="fw-bold text-success"
+                    th:text="${'₺' + #numbers.formatDecimal(order.totalPrice, 1, 2)}"></td>
+              </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div th:if="${shipment != null}" class="card shadow-sm mb-4">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-4">Shipment Info</h5>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="text-muted small">Tracking Number</div>
+                <div class="fw-semibold font-monospace"
+                     th:text="${shipment.trackingNumber}"></div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small">Carrier</div>
+                <div class="fw-semibold" th:text="${shipment.carrierName}"></div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small">Shipped At</div>
+                <div class="fw-semibold"
+                     th:text="${shipment.shippedAt != null ? #temporals.format(shipment.shippedAt, 'dd.MM.yyyy HH:mm') : '-'}"></div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small">Est. Delivery</div>
+                <div class="fw-semibold"
+                     th:text="${shipment.estimatedDelivery != null ? #temporals.format(shipment.estimatedDelivery, 'dd.MM.yyyy') : '-'}"></div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small">Distance</div>
+                <div class="fw-semibold"
+                     th:text="${shipment.distanceKm != null ? #numbers.formatDecimal(shipment.distanceKm, 1, 1) + ' km' : '-'}"></div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-muted small">Shipping Fee</div>
+                <div class="fw-semibold"
+                     th:text="${shipment.shippingFee != null ? '₺' + #numbers.formatDecimal(shipment.shippingFee, 1, 2) : '-'}"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="col-md-4">
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-3">Customer</h5>
+            <div class="text-muted small">Name</div>
+            <div class="fw-semibold mb-2"
+                 th:text="${order.user != null ? order.user.firstName + ' ' + order.user.lastName : 'Guest'}"></div>
+            <div class="text-muted small">Email</div>
+            <div class="fw-semibold mb-2"
+                 th:text="${order.user != null ? order.user.email : '-'}"></div>
+            <div class="text-muted small">Shipping Address</div>
+            <div class="fw-semibold"
+                 th:if="${order.shippingAddress != null}"
+                 th:text="${order.shippingAddress.fullAddress + ', ' + order.shippingAddress.district + ', ' + order.shippingAddress.city}">
+            </div>
+            <div th:if="${order.shippingAddress == null}" class="text-muted">—</div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-4">Timeline</h5>
+            <div class="timeline">
+              <div class="timeline-item">
+                <div th:class="${order.status.name() != 'PENDING'} ? 'timeline-dot done' : 'timeline-dot active'"></div>
+                <div class="fw-semibold">Order Placed</div>
+                <div class="text-muted small"
+                     th:text="${#temporals.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></div>
+              </div>
+              <div class="timeline-item">
+                <div th:class="${order.status.name() == 'SHIPPED' or order.status.name() == 'DELIVERED'} ? 'timeline-dot done' : 'timeline-dot'"></div>
+                <div class="fw-semibold">Shipped</div>
+                <div class="text-muted small"
+                     th:text="${shipment != null and shipment.shippedAt != null ? #temporals.format(shipment.shippedAt, 'dd.MM.yyyy HH:mm') : '—'}"></div>
+              </div>
+              <div class="timeline-item">
+                <div th:class="${order.status.name() == 'DELIVERED'} ? 'timeline-dot done' : 'timeline-dot'"></div>
+                <div class="fw-semibold">Delivered</div>
+                <div class="text-muted small"
+                     th:text="${shipment != null and shipment.deliveredAt != null ? #temporals.format(shipment.deliveredAt, 'dd.MM.yyyy HH:mm') : '—'}"></div>
+              </div>
+              <div th:if="${order.status.name() == 'CANCELLED'}" class="timeline-item">
+                <div class="timeline-dot cancelled"></div>
+                <div class="fw-semibold text-secondary">Cancelled</div>
+                <div class="text-muted small"
+                     th:text="${order.cancelledAt != null ? #temporals.format(order.cancelledAt, 'dd.MM.yyyy HH:mm') : '—'}"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

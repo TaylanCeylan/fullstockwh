@@ -24,4 +24,17 @@ public class ProductResponse
     private List<VariantResponse> variants;
     private String totalStockStatus;
     private int totalStock;
+    private int variantCount;
+    private int lowStockVariantCount;
+    private int outOfStockVariantCount;
+
+    private List<String> imageUrls;
+
+    public String getFirstImageUrl() {
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            return imageUrls.get(0);
+        }
+        return null;
+    }
+
 }

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Manager - Stock Detail</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f7f6; }
+    .sidebar { width: 280px; height: 100vh; position: fixed; left: 0; top: 0; background-color: #343a40; z-index: 1000; }
+    .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+    .card { border: none; border-radius: 12px; }
+    .low-stock  { background-color: #fff3cd; }
+    .out-stock  { background-color: #f8d7da; }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{manager/sidebar :: managerSidebar}"></div>
+
+<div class="main-content">
+  <div class="container-fluid" style="max-width:1100px;">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a th:href="@{/manager/stock}" class="btn btn-outline-secondary btn-sm">← Back</a>
+      <h3 class="fw-bold mb-0" th:text="${product.name}"></h3>
+      <span class="text-muted small"
+            th:text="${'₺' + #numbers.formatDecimal(product.price, 1, 2) + '  ·  ' + product.categoryName}"></span>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}"   class="alert alert-danger"  th:text="${error}"></div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">Variants</h5>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="selectAll()">Select All</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="clearAll()">Clear</button>
+          <button class="btn btn-sm btn-success" id="bulkRequestBtn"
+                  onclick="openBulkModal()" disabled>
+            Bulk Request (<span id="selectedCount">0</span>)
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+          <tr>
+            <th class="ps-4"></th>
+            <th>Color</th>
+            <th>Size</th>
+            <th>SKU</th>
+            <th>Stock</th>
+            <th>Request</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:if="${variants == null or #lists.isEmpty(variants)}">
+            <td colspan="6" class="text-center py-4 text-muted">
+              No variants added yet. Contact admin to add variants for this product.
+            </td>
+          </tr>
+          <tr th:each="v : ${variants}"
+              th:classappend="${v.stockQuantity == 0} ? 'out-stock' :
+                              (${v.stockQuantity <= lowStockThreshold} ? 'low-stock' : '')">
+            <td class="ps-4">
+              <input type="checkbox" class="variant-check"
+                     th:attr="data-variant-id=${v.id},
+                              data-color=${v.color},
+                              data-size=${v.size}"
+                     onchange="updateBulkBtn()">
+            </td>
+            <td th:text="${v.color}"></td>
+            <td th:text="${v.size}"></td>
+            <td class="text-muted small font-monospace" th:text="${v.sku}"></td>
+            <td>
+              <span class="badge"
+                    th:classappend="${v.stockQuantity == 0 ? 'bg-danger' :
+                                    (v.stockQuantity <= lowStockThreshold ? 'bg-warning text-dark' : 'bg-success')}"
+                    th:text="${v.stockQuantity == 0 ? 'Out of Stock' :
+                             (v.stockQuantity <= lowStockThreshold ? v.stockQuantity + ' - Low' : v.stockQuantity + ' in stock')}">
+              </span>
+            </td>
+            <td>
+              <button type="button" class="btn btn-sm btn-outline-dark"
+                      data-bs-toggle="modal"
+                      data-bs-target="#requestModal"
+                      th:attr="data-variant-id=${v.id},
+                               data-color=${v.color},
+                               data-size=${v.size}">
+                Request
+              </button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal fade" id="requestModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Request Stock</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/manager/stock/request" method="post">
+        <div class="modal-body">
+          <input type="hidden" name="variantId" id="modalVariantId">
+          <p class="text-muted mb-3" id="modalVariantLabel"></p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Quantity</label>
+            <input type="number" name="quantity" class="form-control"
+                   min="1" required placeholder="How many units?">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Note <span class="text-muted fw-normal">(optional)</span></label>
+            <textarea name="note" class="form-control" rows="2"
+                      placeholder="Any additional info..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-dark">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="bulkRequestModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Bulk Stock Request</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/manager/stock/bulk-request" method="post">
+        <div class="modal-body">
+          <div id="bulkVariantList" class="mb-3 text-muted small"></div>
+          <div id="bulkHiddenInputs"></div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Quantity <span class="text-muted fw-normal">(applied to all selected)</span></label>
+            <input type="number" name="quantity" class="form-control"
+                   min="1" required placeholder="How many units each?">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Note <span class="text-muted fw-normal">(optional)</span></label>
+            <textarea name="note" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-dark">Submit Bulk Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const requestModal = document.getElementById('requestModal');
+  requestModal.addEventListener('show.bs.modal', function(event) {
+    const btn = event.relatedTarget;
+    document.getElementById('modalVariantId').value = btn.getAttribute('data-variant-id');
+    document.getElementById('modalVariantLabel').textContent =
+        btn.getAttribute('data-color') + ' / ' + btn.getAttribute('data-size');
+  });
+
+  function selectAll() {
+    document.querySelectorAll('.variant-check').forEach(cb => cb.checked = true);
+    updateBulkBtn();
+  }
+
+  function clearAll() {
+    document.querySelectorAll('.variant-check').forEach(cb => cb.checked = false);
+    updateBulkBtn();
+  }
+
+  function updateBulkBtn() {
+    const count = document.querySelectorAll('.variant-check:checked').length;
+    document.getElementById('selectedCount').textContent = count;
+    document.getElementById('bulkRequestBtn').disabled = count === 0;
+  }
+
+  function openBulkModal() {
+    const checked = Array.from(document.querySelectorAll('.variant-check:checked'));
+    const list = document.getElementById('bulkVariantList');
+    const inputs = document.getElementById('bulkHiddenInputs');
+
+    list.innerHTML = '<strong>' + checked.length + ' variants selected:</strong><br>' +
+        checked.map(cb => cb.dataset.color + ' / ' + cb.dataset.size).join('<br>');
+
+    inputs.innerHTML = checked.map(cb =>
+        '<input type="hidden" name="variantIds" value="' + cb.dataset.variantId + '">'
+    ).join('');
+
+    new bootstrap.Modal(document.getElementById('bulkRequestModal')).show();
+  }
+</script>
+</body>
+</html>

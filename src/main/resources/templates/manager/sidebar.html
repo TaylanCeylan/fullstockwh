@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="managerSidebar" class="d-flex flex-column flex-shrink-0 p-3 text-white sidebar">
+  <span class="fs-4 fw-bold text-white">Manager Dashboard</span>
+  <hr>
+
+  <ul class="nav nav-pills flex-column mb-auto">
+    <li class="nav-item">
+      <a th:href="@{/manager/dashboard}" class="nav-link text-white"
+         th:classappend="${activePage == 'dashboard' ? 'active' : ''}">
+        Dashboard
+      </a>
+    </li>
+    <li>
+      <a th:href="@{/manager/orders}" class="nav-link text-white"
+         th:classappend="${activePage == 'orders' ? 'active' : ''}">
+        Orders
+      </a>
+    </li>
+    <li>
+      <a th:href="@{/manager/shipments}" class="nav-link text-white"
+         th:classappend="${activePage == 'shipments' ? 'active' : ''}">
+        Shipments
+      </a>
+    </li>
+    <li>
+      <a th:href="@{/manager/stock}" class="nav-link text-white"
+         th:classappend="${activePage == 'stock' ? 'active' : ''}">
+        Stock Requests
+      </a>
+    </li>
+  </ul>
+
+  <hr>
+
+  <div>
+    <a th:href="@{/}" class="btn btn-outline-light w-100 text-start mb-2">
+      <strong>← Home Page</strong>
+    </a>
+    <form th:action="@{/logout}" method="post">
+      <button type="submit" class="btn btn-danger w-100 text-start">
+        <strong>Logout</strong>
+      </button>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>
