@@ -38,7 +38,7 @@ public class FileStorageServiceImpl implements FileStorageService
             Path targetPath = uploadPath.resolve(uniqueFilename);
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            String fileUrl = "/uploads/" + uniqueFilename;
+            String fileUrl = "/uploads/products/" + uniqueFilename;
             log.info("File stored successfully: {}", fileUrl);
             return fileUrl;
 
@@ -54,7 +54,8 @@ public class FileStorageServiceImpl implements FileStorageService
         if (fileUrl == null || fileUrl.isBlank()) return;
 
         try {
-            Path filePath = Paths.get(fileUrl.startsWith("/") ? fileUrl.substring(1) : fileUrl);
+            String filename = Paths.get(fileUrl).getFileName().toString();
+            Path filePath = Paths.get(uploadDir).resolve(filename);
             if (Files.exists(filePath)) {
                 Files.delete(filePath);
                 log.info("File deleted successfully: {}", fileUrl);
